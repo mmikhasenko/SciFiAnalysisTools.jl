@@ -40,6 +40,30 @@ id2hex(ch_id) == test_id # true
 TLQMD(ch_id) == "T1L0Q1M0_mat0_sipm0" # true
 ```
 
+## Plotting on the standard map
+
+The method `standard_map` can be used to map a list of hex channel IDs and values to two dimensional array.
+The following example shows how to plot detector subparts on the standard map.
+
+```julia
+using Plots
+theme(:wong2, axis=false, grid=false, colorbar=false)
+
+all_hex = [
+    id2hex(TLQMMSTuple((T, L, Q, M, mat, sipm))) for
+    T ∈ 1:3, L ∈ 0:3, Q ∈ 1:4, M ∈ 0:5, mat ∈ 0:3, sipm ∈ 0:3 if !(M == 5 && T in [1, 2])
+];
+
+plot(layout=grid(3,2),
+    heatmap(standard_map(all_hex .=> getproperty.(ChannelID.(all_hex), :_station))),
+    heatmap(standard_map(all_hex .=> getproperty.(ChannelID.(all_hex), :_module))),
+    heatmap(standard_map(all_hex .=> getproperty.(ChannelID.(all_hex), :_quarter))),
+    heatmap(standard_map(all_hex .=> getproperty.(ChannelID.(all_hex), :_layer))),
+    heatmap(standard_map(all_hex .=> getproperty.(ChannelID.(all_hex), :_mat))),
+    heatmap(standard_map(all_hex .=> getproperty.(ChannelID.(all_hex), :_sipm)))
+)
+```
+
 ## How to Cite
 
 If you use `SciFiAnalysisTools.jl` in your work,

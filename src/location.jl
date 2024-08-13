@@ -1,3 +1,9 @@
+
+const points_per_module_x = 32
+const n_points_x = 32 * 6
+
+const n_points_y = 3 * 4 * 2
+
 """
     location_bin_center(id)
 
@@ -20,15 +26,39 @@ function location_bin_center(id)
     course_x = _module
     course_y = 4 * (_station - 1) + _layer
     #
-    Nx = 32
     fine_x = 2 * (4 * _mat + _sipm) + 1
     reverted = _quarter ∈ [0, 3]
     if reverted
-        fine_x = Nx - fine_x
+        fine_x = points_per_module_x - fine_x
     end
     fine_y = div(_quarter, 2)
     #
-    x = (Nx * course_x + fine_x) * sign_x
+    x = (points_per_module_x * course_x + fine_x) * sign_x
     y = 2 * course_y + fine_y
     (; x, y)
+end
+
+"""
+    standard_map(id2values)
+
+Creates a 2D array with the values of a given dictionary of channel IDs.
+Default values are `NaN`, only sipm present in the list are updated with the provided values.
+
+# Arguments
+- `id2values`: A list of pais of channel IDs and values.
+"""
+function standard_map(id2values)
+    ids = first.(id2values)
+    values = last.(id2values)
+    #
+    M = fill(NaN, n_points_y, n_points_x)
+    for (id, val) in id2values
+        ChannelID(id) |> location_bin_center |> xy -> begin
+            x, y = xy
+            i = div(x + n_points_x + 1, 2)
+            j = y + 1
+            M[j, i] = val
+        end
+    end
+    return M
 end

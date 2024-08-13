@@ -12,9 +12,38 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 [![All Contributors](https://img.shields.io/github/all-contributors/mmikhasenko/SciFiAnalysisTools.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square)](#contributors)
 
+This package provides tools for analyzing data from the LHCb SciFi detector.
+
+## Installation
+
+To install the package, use the following command:
+
+```julia
+using Pkg
+Pkg.add(Pkg.PackageSpec(; url="https://github.com/mmikhasenko/SciFiAnalysisTools.jl.git"))
+```
+
+## Usage
+
+To get started, you can explore the provided functionalities,
+
+```julia
+using SciFiAnalysisTools
+
+test_id = 0x00044010
+ch_id = ChannelID(test_id) # split the channel ID into physical parts
+
+# code back to hex
+id2hex(ch_id) == test_id # true
+
+# print the full name
+TLQMD(ch_id) == "T1L0Q1M0_mat0_sipm0" # true
+```
+
 ## How to Cite
 
-If you use SciFiAnalysisTools.jl in your work, please cite using the reference given in [CITATION.cff](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/blob/main/CITATION.cff).
+If you use `SciFiAnalysisTools.jl` in your work,
+please cite using the reference given in [CITATION.cff](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/blob/main/CITATION.cff).
 
 ## Contributing
 

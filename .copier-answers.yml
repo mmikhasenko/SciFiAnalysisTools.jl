@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier
+AnswerStrategy: recommended
+AuthorEmail: mikhail.mikhasenko@cern.ch
+AuthorName: Mikhail Mikhasenko
+Indentation: 4
+JuliaMinVersion: '1.6'
+License: MIT
+PackageName: SciFiAnalysisTools
+PackageOwner: mmikhasenko
+PackageUUID: b4afd74a-200e-56c5-86f2-542176f22525
+_commit: v0.9.1
+_src_path: https://github.com/abelsiqueira/BestieTemplate.jl

@@ -3,5 +3,9 @@ uuid = "b4afd74a-200e-56c5-86f2-542176f22525"
 authors = ["Mikhail Mikhasenko <mikhail.mikhasenko@cern.ch> and contributors"]
 version = "0.1.0"
 
+[deps]
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+
 [compat]
+Parameters = "0.12.0"
 julia = "1.6"

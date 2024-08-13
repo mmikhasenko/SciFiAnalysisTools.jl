@@ -14,17 +14,21 @@ coordinate system.
 - `y` is computed by combining the station and layer information with the quarter's contribution.
 """
 function location_bin_center(id)
-    course_x = -id._module * (2isodd(id._quarter) - 1)
-    course_y = 4 * (id._station - 1) + id._layer
+    @unpack _station, _layer, _module, _quarter, _mat, _sipm = id
     #
-    fine_x = (4 * id._mat + id._sipm + 0.5) / 16
-    reverted = id._quarter ∈ [0, 3]
+    sign_x = (2 * isodd(_quarter) - 1)
+    course_x = _module
+    course_y = 4 * (_station - 1) + _layer
+    #
+    Nx = 32
+    fine_x = 2 * (4 * _mat + _sipm) + 1
+    reverted = _quarter ∈ [0, 3]
     if reverted
-        fine_x = 1 - fine_x
+        fine_x = Nx - fine_x
     end
-    fine_y = div(id._quarter, 2) / 2
+    fine_y = div(_quarter, 2)
     #
-    x = course_x + fine_x
-    y = course_y + fine_y
+    x = (Nx * course_x + fine_x) * sign_x
+    y = 2 * course_y + fine_y
     (; x, y)
 end

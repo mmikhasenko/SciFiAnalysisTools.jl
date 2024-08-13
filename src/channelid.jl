@@ -11,6 +11,8 @@ const masks = (
     _station = 0xc0000, # 11000000000000000000
 )
 
+const TLQMMSTuple = NamedTuple{(:_station, :_layer, :_quarter, :_module, :_mat, :_sipm)}
+
 """
     TLQMD(ch_id)
 

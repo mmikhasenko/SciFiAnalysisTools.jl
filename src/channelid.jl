@@ -1,6 +1,6 @@
 
 # taken from the code,
-# - [scurvefit](https://gitlab.cern.ch/pacific-calibration/scurvefit/-/blob/master/scurvefit/objects/include/SFChannelId.h)
+# - [Detector](https://gitlab.cern.ch/lhcb/Detector/-/blob/master/Detector/FT/include/Detector/FT/FTChannelID.h?ref_type=heads#L35)
 const masks = (
     _channel = 0x7f,    # 00000000000001111111
     _sipm = 0x180,   # 00000000000110000000

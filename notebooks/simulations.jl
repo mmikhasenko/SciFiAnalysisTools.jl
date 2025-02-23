@@ -240,21 +240,21 @@ function plot_summary(pars)
     sc = SCurve(lis, i)
     #
     @unpack delay_scan_range, threshold_scan_range = pars
+	@unpack signal_time_range = pars
     @unpack lts_threshold = pars
     #
-
     p1 = plot(ylims = (0, 4))
     map(shot(lis, 50)) do s #amplitude
         # s = Signal(; shape=lis.sipm, amplitude, position = lis.delay, lis.background)
-        plot!(t -> signal(s, t), -10, 200, c = 1, lw = 0.3)
+        plot!(t -> signal(s, t), signal_time_range..., c = 1, lw = 0.3)
     end
-    vspan!([-10, i.window[1]], c = 4, alpha = 0.3)
-    vspan!([i.window[2], 200], c = 4, alpha = 0.3)
+    vspan!([signal_time_range[1], i.window[1]], c = 4, alpha = 0.3)
+    vspan!([i.window[2], signal_time_range[2]], c = 4, alpha = 0.3)
     #
     p2 = plot(
         th -> opposite_cdf(sc, th),
         threshold_scan_range,
-        lw = 1,
+        lw = 2,
         ylims = (0, 1),
         lab = "μ=$(lis.μ)",
         ylab = "ratio(>thr)",
@@ -262,7 +262,7 @@ function plot_summary(pars)
     vline!([lts_threshold], c = 3)
     scatter!([lts_threshold], [opposite_cdf(sc, lts_threshold)], c = 3, left_margin = 5mm)
     #
-    p3 = plot(delay_scan_range, ylims = (0, 1), ylab = "ratio(>thr)") do delay
+    p3 = plot(delay_scan_range, ylims = (0, 1), ylab = "ratio(>thr)", lw=2) do delay
         opposite_cdf(SCurve(LISSettings(lis; delay), i), lts_threshold)
     end
     vline!([lis.delay], c = 3)
@@ -280,7 +280,7 @@ function plot_summary(pars)
         size = (900, 300),
         layout = grid(1, 3),
         title = [
-            "Signal Integration" "Threshold Scan" "Light Time Scan"
+            "Signal Integration" "Threshold Scan" "Lite Time Scan"
         ],
         xlab = ["t [ns]" "threshold [DAC]" "Δt [ns]"],
         bottom_margin = 4mm,
@@ -289,24 +289,27 @@ end
 
 # ╔═╡ d67aba64-cc79-406d-8c48-dc20729e616a
 let
-    sipm0 = SiPM(3, 20, 0.1)
-    i = Integrator(; window = (20, 120), sampling_Δt = 5.5, factor_to_DAC = 40.0)
+    sipm0 = SiPM(3, 6, 0.1)
+    i = Integrator(; window = (10, 60), sampling_Δt = 5.5, factor_to_DAC = 70.0)
     #
-    delay_scan_range = range(-150, 200, 100)
-    threshold_scan_range = range(-50, 128, 100)
-    lts_threshold = 20
+	signal_time_range = (-10, 120)
+    delay_scan_range = range(-50, 70, 100)
+    threshold_scan_range = 0:200
+    lts_threshold = 80
     #
-    pars = (; i, delay_scan_range, threshold_scan_range, lts_threshold)
+    pars = (; i,
+		delay_scan_range, threshold_scan_range, signal_time_range,
+		lts_threshold)
     #
-    delay_one_direction = range(-120, 150, 100)
+    delay_one_direction = range(-40, 50, 100)
     delay_cycle = vcat(delay_one_direction, reverse(delay_one_direction))
     m = div(length(delay_one_direction), 2)
     from_center = vcat(delay_cycle[m:end], delay_cycle[1:m-1])
     anim = @animate for delay in from_center
-        lis = LISSettings(; sipm = sipm0, delay, μ = 1.2, background = 0.2)
+        lis = LISSettings(; sipm = sipm0, delay, μ = 0.5, background = 0.5)
         plot_summary((; pars..., lis))
     end
-    gif(anim, "light-thr-scan.gif"; fps = 10)
+    gif(anim, joinpath(@__DIR__, "..", "plots", "lite-time-scan.gif"); fps = 10)
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001

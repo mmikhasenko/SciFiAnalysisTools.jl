@@ -58,7 +58,7 @@ md"""
 """
 
 # ╔═╡ 9007a485-3b7f-4b54-b39b-bf40aa5d38f4
-@with_kw struct LISSettings
+@with_kw struct LISFixedDelay
     sipm::SiPM
     delay::Float64
     μ::Float16
@@ -66,15 +66,40 @@ md"""
 end
 
 # ╔═╡ 1acdc740-df1d-4f3f-ae47-dea12c51da7e
-lis_test = LISSettings(; sipm = sipm_test, delay = -30, μ = 1.2, background = 0.4)
+lis_test = LISFixedDelay(; sipm = sipm_test, delay = -30, μ = 1.2, background = 0.4)
 
 # ╔═╡ 09fc9e3b-3872-46cb-a528-72538491288d
-function shot(lis::LISSettings, n::Int)
+function shot(lis::LISFixedDelay, n::Int)
     @unpack sipm, delay = lis
     return map(1:n) do _
         amplitude = rand(Poisson(lis.μ)) + sipm.fluc * randn()
         amplitude *= amplitude > 0.5
         Signal(; shape = sipm, amplitude, position = delay, lis.background)
+    end
+end
+
+# ╔═╡ 53be3320-00c4-4fc2-a277-6a596258326d
+md"""
+### LIS Random Delay
+"""
+
+# ╔═╡ f72f1638-8fad-40b2-9821-b6be8f812bf6
+@with_kw struct LISRandomDelay
+    sipm::SiPM
+    delay::Float64
+    σ_delay::Float64
+    μ::Float16
+    background::Float64
+end
+
+# ╔═╡ e32982d8-cf90-46d9-8cd8-f5889bcba0d5
+function shot(lis::LISRandomDelay, n::Int)
+    @unpack sipm, delay, σ_delay = lis
+    return map(1:n) do _
+        amplitude = rand(Poisson(lis.μ)) + sipm.fluc * randn()
+        amplitude *= amplitude > 0.5
+		position = delay + rand()*σ_delay
+        Signal(; shape = sipm, amplitude, position, lis.background)
     end
 end
 
@@ -90,6 +115,21 @@ begin
     plot!(ylim = (0, :auto))
 end
 
+# ╔═╡ 7dbc790c-9bcc-4d43-aedf-cebec3314267
+lis_random_test = LISRandomDelay(;
+	sipm = sipm_test, delay = -30, σ_delay=15, μ = 1.2, background = 0.4)
+
+# ╔═╡ 342588c0-a2e9-4f1a-b112-eb121a3cc81a
+let
+	_signals = shot(lis_random_test, 30)
+	# 
+    plot()
+    map(_signals) do s
+        plot!(t -> signal(s, t), -10, 200)
+    end
+    plot!(ylim = (0, :auto))
+end
+
 # ╔═╡ 5db596ea-455d-4b66-8354-1e8ea3837800
 md"""
 ## Readout
@@ -97,7 +137,7 @@ md"""
 
 # ╔═╡ 0ff8f990-2997-40c1-ad81-9574785a211c
 @with_kw struct Integrator
-    window::Tuple{Float64,Float64}
+    window::Tuple{Float64, Float64}
     sampling_Δt::Float64
     factor_to_DAC::Float64
 end
@@ -120,7 +160,7 @@ _signals = shot(lis_test, 10_000)
 stephist(sample_integrate.(Ref(i_test), _signals), bins = 100, xlab = "charge [DAC]")
 
 # ╔═╡ aaf709dd-b071-4835-85e7-9f4d88a3a279
-function threshold_scan(lis::LISSettings, i::Integrator, scan, nSample = 10_000)
+function threshold_scan(lis::LISFixedDelay, i::Integrator, scan, nSample = 10_000)
     ratios = map(scan) do th
         _sample = shot(lis, nSample)
         _charges = sample_integrate.(Ref(i), _signals)
@@ -149,7 +189,7 @@ begin
         pedestal::Float64
     end
     #
-    function SCurve(lis::LISSettings, i::Integrator)
+    function SCurve(lis::LISFixedDelay, i::Integrator)
         zero_pe = Signal(lis.sipm, 0.0, lis.delay, lis.background)
         one_pe = Signal(lis.sipm, 1.0, lis.delay, lis.background)
         pedestal = sample_integrate(i, zero_pe)
@@ -212,10 +252,10 @@ md"""
 """
 
 # ╔═╡ e167ee10-5811-4beb-9195-58a252ed0623
-function light_time_scan(lis::LISSettings, i::Integrator, scan, threshold, nSample = 10_000)
+function light_time_scan(lis::LISFixedDelay, i::Integrator, scan, threshold, nSample = 10_000)
     #
     ratios = map(scan) do Δt
-        _lis = LISSettings(lis; delay = Δt)
+        _lis = LISFixedDelay(lis; delay = Δt)
         _sample = shot(_lis, nSample)
         _charges = sample_integrate.(Ref(i), _sample)
         sum(_charges .> threshold)
@@ -230,9 +270,14 @@ light_time_scan_test = light_time_scan(lis_test, i_test, -150:1.1:200, 1.5);
 let
     plot(light_time_scan_test..., lab = "numerically")
     plot!(light_time_scan_test.scan, lab = "analytically") do delay
-        opposite_cdf(SCurve(LISSettings(lis_test; delay), i_test), 1.5)
+        opposite_cdf(SCurve(LISFixedDelay(lis_test; delay), i_test), 1.5)
     end
 end
+
+# ╔═╡ 5cd0a48f-b06e-49a0-b51a-b105ac9fc157
+md"""
+## Summary
+"""
 
 # ╔═╡ 04bf78d3-15be-45f8-bf53-dc4ce25613ed
 function plot_summary(pars)
@@ -240,7 +285,7 @@ function plot_summary(pars)
     sc = SCurve(lis, i)
     #
     @unpack delay_scan_range, threshold_scan_range = pars
-	@unpack signal_time_range = pars
+    @unpack signal_time_range = pars
     @unpack lts_threshold = pars
     #
     p1 = plot(ylims = (0, 4))
@@ -262,13 +307,13 @@ function plot_summary(pars)
     vline!([lts_threshold], c = 3)
     scatter!([lts_threshold], [opposite_cdf(sc, lts_threshold)], c = 3, left_margin = 5mm)
     #
-    p3 = plot(delay_scan_range, ylims = (0, 1), ylab = "ratio(>thr)", lw=2) do delay
-        opposite_cdf(SCurve(LISSettings(lis; delay), i), lts_threshold)
+    p3 = plot(delay_scan_range, ylims = (0, 1), ylab = "ratio(>thr)", lw = 2) do delay
+        opposite_cdf(SCurve(LISFixedDelay(lis; delay), i), lts_threshold)
     end
     vline!([lis.delay], c = 3)
     scatter!(
         [lis.delay],
-        [opposite_cdf(SCurve(LISSettings(lis; lis.delay), i), lts_threshold)],
+        [opposite_cdf(SCurve(LISFixedDelay(lis; lis.delay), i), lts_threshold)],
         c = 3,
         left_margin = 5mm,
     )
@@ -289,24 +334,24 @@ end
 
 # ╔═╡ d67aba64-cc79-406d-8c48-dc20729e616a
 let
-    sipm0 = SiPM(3, 6, 0.1)
+    sipm0 = SiPM(3, 6, 0.25)
     i = Integrator(; window = (10, 60), sampling_Δt = 5.5, factor_to_DAC = 70.0)
     #
-	signal_time_range = (-10, 120)
+    signal_time_range = (-10, 120)
     delay_scan_range = range(-50, 70, 100)
     threshold_scan_range = 0:200
     lts_threshold = 80
     #
     pars = (; i,
-		delay_scan_range, threshold_scan_range, signal_time_range,
-		lts_threshold)
+        delay_scan_range, threshold_scan_range, signal_time_range,
+        lts_threshold)
     #
     delay_one_direction = range(-40, 50, 100)
     delay_cycle = vcat(delay_one_direction, reverse(delay_one_direction))
     m = div(length(delay_one_direction), 2)
     from_center = vcat(delay_cycle[m:end], delay_cycle[1:m-1])
     anim = @animate for delay in from_center
-        lis = LISSettings(; sipm = sipm0, delay, μ = 0.5, background = 0.5)
+        lis = LISFixedDelay(; sipm = sipm0, delay, μ = 0.6, background = 0.5)
         plot_summary((; pars..., lis))
     end
     gif(anim, joinpath(@__DIR__, "..", "plots", "lite-time-scan.gif"); fps = 10)
@@ -1625,6 +1670,11 @@ version = "1.4.1+2"
 # ╠═45c48394-5797-4c80-b374-077b0ddd0172
 # ╠═38a87157-b4f9-4f86-886b-9f8576f1a3a8
 # ╠═09fc9e3b-3872-46cb-a528-72538491288d
+# ╟─53be3320-00c4-4fc2-a277-6a596258326d
+# ╠═f72f1638-8fad-40b2-9821-b6be8f812bf6
+# ╠═e32982d8-cf90-46d9-8cd8-f5889bcba0d5
+# ╠═7dbc790c-9bcc-4d43-aedf-cebec3314267
+# ╠═342588c0-a2e9-4f1a-b112-eb121a3cc81a
 # ╟─5db596ea-455d-4b66-8354-1e8ea3837800
 # ╠═0ff8f990-2997-40c1-ad81-9574785a211c
 # ╠═d3cee1c6-3677-4783-9a52-fc43f12a9d1d
@@ -1646,6 +1696,7 @@ version = "1.4.1+2"
 # ╠═e167ee10-5811-4beb-9195-58a252ed0623
 # ╠═fb950472-67c6-43f2-97e1-c7881870212b
 # ╠═cc816cc7-5de2-4639-a6e4-025a30d8a50f
+# ╟─5cd0a48f-b06e-49a0-b51a-b105ac9fc157
 # ╠═04bf78d3-15be-45f8-bf53-dc4ce25613ed
 # ╠═d67aba64-cc79-406d-8c48-dc20729e616a
 # ╟─00000000-0000-0000-0000-000000000001

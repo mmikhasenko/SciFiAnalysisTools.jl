@@ -23,7 +23,10 @@ samples_test = sample_integrate.(Ref(i_test), signals_test_shot)
 stephist(samples_test, bins = 100, xlab = "charge [DAC]")
 
 scan_test = threshold_scan(lis_test, i_test, -1:0.05:3);
+
 plot(scan_test..., xlab = "charge [DAC]")
+# analytically
+plot(th -> spectrum(sc_test, th), 0, 3, xlab = "charge [DAC]")
 
 
 

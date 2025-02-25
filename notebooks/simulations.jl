@@ -116,7 +116,11 @@ end
 
 # ╔═╡ 7dbc790c-9bcc-4d43-aedf-cebec3314267
 lis_random_test = LISRandomDelay(;
-    sipm = sipm_test, delay_density = Normal(-30, 1), μ = 1.2, background = 0.4)
+    sipm = sipm_test,
+    delay_density = Normal(-30, 1),
+    μ = 1.2,
+    background = 0.4,
+)
 
 # ╔═╡ 342588c0-a2e9-4f1a-b112-eb121a3cc81a
 let
@@ -136,7 +140,7 @@ md"""
 
 # ╔═╡ 0ff8f990-2997-40c1-ad81-9574785a211c
 @with_kw struct Integrator
-    window::Tuple{Float64, Float64}
+    window::Tuple{Float64,Float64}
     sampling_Δt::Float64
     factor_to_DAC::Float64
 end
@@ -202,8 +206,7 @@ begin
         lis::LIS
         i::Integrator
     end
-    SCurve(lis::T, i::Integrator) where T <: LISRandomDelay =
-        ConvSCurve(lis, i)
+    SCurve(lis::T, i::Integrator) where {T<:LISRandomDelay} = ConvSCurve(lis, i)
 end
 
 # ╔═╡ 96720ee7-1603-4fb6-89f9-11866ef580f6
@@ -224,9 +227,7 @@ end
 function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
     @unpack i, lis = sc
     @unpack μ, delay_density = lis
-    _sc(delay) = SCurve(
-        LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
-        i)
+    _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
     #
     lims = (-Inf, Inf)
     _value = quadgk(lims...) do delay
@@ -239,9 +240,7 @@ end
 function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
     @unpack i, lis = sc
     @unpack μ, delay_density = lis
-    _sc(delay) = SCurve(
-        LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
-        i)
+    _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
     #
     lims = (-Inf, Inf)
     _value = quadgk(lims...) do delay
@@ -251,8 +250,12 @@ function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
 end
 
 # ╔═╡ 8d01998a-7f7c-412f-a6d4-6c49b5ed1386
-lis_random_test = LISRandomDelay(; delay_density = Normal(lis_test.delay, 2.0),
-    lis_test.sipm, lis_test.μ, lis_test.background)
+lis_random_test = LISRandomDelay(;
+    delay_density = Normal(lis_test.delay, 2.0),
+    lis_test.sipm,
+    lis_test.μ,
+    lis_test.background,
+)
 
 # ╔═╡ 924cccc1-c541-43bb-8c21-afdff8d6b140
 scg_test = SCurve(lis_random_test, i_test);
@@ -303,8 +306,13 @@ f(th) =
     let
         lims = (-10, 10)
         quadgk(lims...) do delay
-            opposite_cdf(SCurve(
-                    LISFixedDelay(; sipm = sipm_test, delay, μ = 1.2, background = 0.4), i_test), th)
+            opposite_cdf(
+                SCurve(
+                    LISFixedDelay(; sipm = sipm_test, delay, μ = 1.2, background = 0.4),
+                    i_test,
+                ),
+                th,
+            )
         end[1] / (lims[2] - lims[1])
     end
 
@@ -322,7 +330,13 @@ md"""
 """
 
 # ╔═╡ e167ee10-5811-4beb-9195-58a252ed0623
-function light_time_scan(lis::LISFixedDelay, i::Integrator, scan, threshold, nSample = 10_000)
+function light_time_scan(
+    lis::LISFixedDelay,
+    i::Integrator,
+    scan,
+    threshold,
+    nSample = 10_000,
+)
     #
     ratios = map(scan) do Δt
         _lis = LISFixedDelay(lis; delay = Δt)
@@ -412,9 +426,7 @@ let
     threshold_scan_range = 0:200
     lts_threshold = 80
     #
-    pars = (; i,
-        delay_scan_range, threshold_scan_range, signal_time_range,
-        lts_threshold)
+    pars = (; i, delay_scan_range, threshold_scan_range, signal_time_range, lts_threshold)
     #
     delay_one_direction = range(-40, 50, 100)
     delay_cycle = vcat(delay_one_direction, reverse(delay_one_direction))

@@ -35,4 +35,3 @@ function shot(lis::LISRandomDelay, n::Int)
         Signal(; shape = sipm, amplitude, position, lis.background)
     end
 end
-

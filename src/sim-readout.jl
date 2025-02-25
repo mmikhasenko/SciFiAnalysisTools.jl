@@ -1,5 +1,5 @@
 @with_kw struct Integrator
-    window::Tuple{Float64, Float64}
+    window::Tuple{Float64,Float64}
     sampling_Δt::Float64
     factor_to_DAC::Float64
 end

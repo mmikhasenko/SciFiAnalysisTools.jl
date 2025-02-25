@@ -53,15 +53,12 @@ struct ConvSCurve{LIS}
     i::Integrator
 end
 
-SCurve(lis::T, i::Integrator) where T <: LISRandomDelay =
-    ConvSCurve(lis, i)
+SCurve(lis::T, i::Integrator) where {T<:LISRandomDelay} = ConvSCurve(lis, i)
 
 function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
     @unpack i, lis = sc
     @unpack μ, delay_density = lis
-    _sc(delay) = SCurve(
-        LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
-        i)
+    _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
     #
     lims = (-Inf, Inf)
     _value = quadgk(lims...) do delay
@@ -73,9 +70,7 @@ end
 function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
     @unpack i, lis = sc
     @unpack μ, delay_density = lis
-    _sc(delay) = SCurve(
-        LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
-        i)
+    _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
     #
     lims = (-Inf, Inf)
     _value = quadgk(lims...) do delay

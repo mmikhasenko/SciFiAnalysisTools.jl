@@ -7,7 +7,13 @@ function threshold_scan(lis::LISFixedDelay, i::Integrator, scan, nSample = 10_00
     (; scan = collect(scan), ratios)
 end
 
-function light_time_scan(lis::LISFixedDelay, i::Integrator, scan, threshold, nSample = 10_000)
+function light_time_scan(
+    lis::LISFixedDelay,
+    i::Integrator,
+    scan,
+    threshold,
+    nSample = 10_000,
+)
     #
     ratios = map(scan) do Δt
         _lis = LISFixedDelay(lis; delay = Δt)

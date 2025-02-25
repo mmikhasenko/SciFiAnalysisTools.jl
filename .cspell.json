@@ -1,6 +1,4 @@
 {
-    "version": "0.2",
-    "language": "en",
     "dictionaries": ["dict"],
     "dictionaryDefinitions": [
         {
@@ -8,5 +6,7 @@
             "path": "./.cspell/dict.txt"
         }
     ],
-    "ignorePaths": [".cspell.json", ".cspell/*.txt", ".vscode/*.json"]
+    "ignorePaths": [".cspell.json", ".cspell/*.txt", ".vscode/*.json"],
+    "language": "en",
+    "version": "0.2"
 }

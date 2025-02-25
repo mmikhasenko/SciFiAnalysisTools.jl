@@ -27,8 +27,12 @@ plot(scan_test..., xlab = "charge [DAC]")
 
 
 
-lis_random_test = LISRandomDelay(; delay_density = Normal(lis_test.delay, 2.0),
-    lis_test.sipm, lis_test.μ, lis_test.background)
+lis_random_test = LISRandomDelay(;
+    delay_density = Normal(lis_test.delay, 2.0),
+    lis_test.sipm,
+    lis_test.μ,
+    lis_test.background,
+)
 
 let
     _signals = shot(lis_random_test, 30)

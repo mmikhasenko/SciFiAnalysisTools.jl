@@ -66,7 +66,7 @@ md"""
 end
 
 # ╔═╡ 1acdc740-df1d-4f3f-ae47-dea12c51da7e
-lis_test = LISFixedDelay(; sipm = sipm_test, delay = -30, μ = 1.2, background = 0.4)
+lis_test = LISFixedDelay(; sipm = sipm_test, delay = -30, μ = 2.2, background = 0.4)
 
 # ╔═╡ 09fc9e3b-3872-46cb-a528-72538491288d
 function shot(lis::LISFixedDelay, n::Int)
@@ -84,21 +84,20 @@ md"""
 """
 
 # ╔═╡ f72f1638-8fad-40b2-9821-b6be8f812bf6
-@with_kw struct LISRandomDelay
+@with_kw struct LISRandomDelay{T}
     sipm::SiPM
-    delay::Float64
-    σ_delay::Float64
+	delay_density::T
     μ::Float16
     background::Float64
 end
 
 # ╔═╡ e32982d8-cf90-46d9-8cd8-f5889bcba0d5
 function shot(lis::LISRandomDelay, n::Int)
-    @unpack sipm, delay, σ_delay = lis
+    @unpack sipm = lis
     return map(1:n) do _
         amplitude = rand(Poisson(lis.μ)) + sipm.fluc * randn()
         amplitude *= amplitude > 0.5
-		position = delay + rand()*σ_delay
+		position = rand(lis.delay_density)
         Signal(; shape = sipm, amplitude, position, lis.background)
     end
 end
@@ -117,7 +116,7 @@ end
 
 # ╔═╡ 7dbc790c-9bcc-4d43-aedf-cebec3314267
 lis_random_test = LISRandomDelay(;
-	sipm = sipm_test, delay = -30, σ_delay=15, μ = 1.2, background = 0.4)
+	sipm = sipm_test, delay_density=Normal(-30, 1), μ = 1.2, background = 0.4)
 
 # ╔═╡ 342588c0-a2e9-4f1a-b112-eb121a3cc81a
 let
@@ -182,8 +181,8 @@ md"""
 
 # ╔═╡ 287623a1-71fc-4c2c-89dc-d1c7d20352c2
 begin
-    @with_kw struct SCurve
-        μ::Float64
+    @with_kw struct SimpleSCurve
+		μ::Float64
         σ::Float64
         gain::Float64
         pedestal::Float64
@@ -196,12 +195,19 @@ begin
         gain = sample_integrate(i, one_pe) - pedestal
         #
         σ = lis.sipm.fluc * gain
-        SCurve(; μ = lis.μ, σ, gain, pedestal)
+        SimpleSCurve(; lis.μ, σ, gain, pedestal)
     end
+	# 
+	struct ConvSCurve{LIS}
+        lis::LIS
+		i::Integrator
+    end
+    SCurve(lis::T, i::Integrator) where T<:LISRandomDelay = 
+        ConvSCurve(lis, i)
 end
 
 # ╔═╡ 96720ee7-1603-4fb6-89f9-11866ef580f6
-function spectrum(sc::SCurve, th)
+function spectrum(sc::SimpleSCurve, th)
     @unpack μ, σ, gain, pedestal = sc
     a_dist = Poisson(μ)
     pedestal_pdf = Normal(pedestal, σ / 3)
@@ -214,8 +220,45 @@ function spectrum(sc::SCurve, th)
     _value
 end
 
+# ╔═╡ e20782ea-044e-477d-a446-0170a49ca55b
+function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
+    @unpack i, lis = sc
+	@unpack μ, delay_density = lis
+	_sc(delay) = SCurve(
+		LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
+		i)
+	# 
+	lims = (-Inf, Inf)
+    _value = quadgk(lims...) do delay
+		pdf(delay_density, delay) * spectrum(_sc(delay), th)
+	end[1]
+	_value
+end
+
+# ╔═╡ 2eea2a42-6b37-4042-bdc7-44f4f804cebf
+function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
+    @unpack i, lis = sc
+	@unpack μ, delay_density = lis
+	_sc(delay) = SCurve(
+		LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
+		i)
+	# 
+	lims = (-Inf, Inf)
+    _value = quadgk(lims...) do delay
+		pdf(delay_density, delay) * opposite_cdf(_sc(delay), th)
+	end[1]
+	_value
+end
+
+# ╔═╡ 8d01998a-7f7c-412f-a6d4-6c49b5ed1386
+lisg_test = LISRandomDelay(; delay_density=Normal(lis_test.delay, 2.0),
+	lis_test.sipm, lis_test.μ, lis_test.background)
+
+# ╔═╡ 924cccc1-c541-43bb-8c21-afdff8d6b140
+scg_test = SCurve(lisg_test, i_test);
+
 # ╔═╡ c56e47ee-8009-42d9-85db-47b9efd3c874
-function opposite_cdf(sc::SCurve, th)
+function opposite_cdf(sc::SimpleSCurve, th)
     @unpack μ, σ, gain, pedestal = sc
     a_dist = Poisson(μ)
     pedestal_pdf = Normal(pedestal, σ / 3)
@@ -228,14 +271,23 @@ function opposite_cdf(sc::SCurve, th)
     _value
 end
 
-# ╔═╡ 238e32b0-afb1-4c49-8176-04ce1d8eab16
-sc_random = SCurve(; μ = lis_test.μ, σ = 0.06, gain = 0.67, pedestal = 0.0);
+# ╔═╡ 6655727b-163c-42d0-a208-593e6e058ab4
+sc_test = SCurve(lis_test, i_test);
+
+# ╔═╡ 778e0071-619e-4a70-ab58-4ebea3034153
+let
+	plot(th->spectrum(sc_test, th), 0, 3)
+	plot!(th->spectrum(scg_test, th), 0, 3)
+end
+
+# ╔═╡ 58b58b4d-e382-4288-abc3-1cf3daa1beed
+let
+	plot(th->opposite_cdf(sc_test, th), 0, 3)
+	plot!(th->opposite_cdf(scg_test, th), 0, 3)
+end
 
 # ╔═╡ 2ea6b53f-35f4-42a2-b7ed-52723a6848a0
-@assert isapprox(quadgk(th -> spectrum(sc_random, th), -1, 10)[1], 1, atol = 0.1)
-
-# ╔═╡ 20bae35d-5f6c-403d-91f3-51b99ae1b72a
-plot(th -> spectrum(sc_random, th), -1:0.01:3)
+@assert isapprox(quadgk(th -> spectrum(sc_test, th), -1, 10)[1], 1, atol = 0.1)
 
 # ╔═╡ 159f47b3-e18d-4446-b146-a620c9c10c9e
 let
@@ -243,6 +295,23 @@ let
     plot!(scan_test..., m = (4, :+), lab = "scan")
     _sc = SCurve(lis_test, i_test)
     plot!(th -> opposite_cdf(_sc, th), -1, 3, lw = 1, lab = "exact")
+    plot!()
+end
+
+# ╔═╡ 773c6a20-547a-4715-97e8-d182f499105c
+f(th) = let
+	lims = (-10, 10)
+	quadgk(lims...) do delay
+	opposite_cdf(SCurve(
+		LISFixedDelay(; sipm = sipm_test, delay, μ = 1.2, background = 0.4), i_test), th)
+end[1]/(lims[2]-lims[1])
+end
+
+# ╔═╡ 0498e38c-6ebb-4697-806a-83870bff270e
+let
+    plot(xlab = "charge [DAC]")
+    _sc = SCurve(lis_test, i_test)
+    plot!(f, -1, 3, lw = 1, lab = "exact")
     plot!()
 end
 
@@ -1687,11 +1756,18 @@ version = "1.4.1+2"
 # ╟─43441077-350a-4c00-9ad6-44b1b3a8c94a
 # ╠═287623a1-71fc-4c2c-89dc-d1c7d20352c2
 # ╠═96720ee7-1603-4fb6-89f9-11866ef580f6
+# ╠═e20782ea-044e-477d-a446-0170a49ca55b
+# ╠═2eea2a42-6b37-4042-bdc7-44f4f804cebf
+# ╠═778e0071-619e-4a70-ab58-4ebea3034153
+# ╠═8d01998a-7f7c-412f-a6d4-6c49b5ed1386
+# ╠═924cccc1-c541-43bb-8c21-afdff8d6b140
+# ╠═58b58b4d-e382-4288-abc3-1cf3daa1beed
 # ╠═c56e47ee-8009-42d9-85db-47b9efd3c874
-# ╠═238e32b0-afb1-4c49-8176-04ce1d8eab16
+# ╠═6655727b-163c-42d0-a208-593e6e058ab4
 # ╠═2ea6b53f-35f4-42a2-b7ed-52723a6848a0
-# ╠═20bae35d-5f6c-403d-91f3-51b99ae1b72a
 # ╠═159f47b3-e18d-4446-b146-a620c9c10c9e
+# ╠═773c6a20-547a-4715-97e8-d182f499105c
+# ╠═0498e38c-6ebb-4697-806a-83870bff270e
 # ╟─04243deb-dd25-4fca-9e20-f3b5d49b3c8b
 # ╠═e167ee10-5811-4beb-9195-58a252ed0623
 # ╠═fb950472-67c6-43f2-97e1-c7881870212b

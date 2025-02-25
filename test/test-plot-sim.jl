@@ -27,11 +27,11 @@ plot(scan_test..., xlab = "charge [DAC]")
 
 
 
-lisg_test = LISRandomDelay(; delay_density = Normal(lis_test.delay, 2.0),
+lis_random_test = LISRandomDelay(; delay_density = Normal(lis_test.delay, 2.0),
     lis_test.sipm, lis_test.μ, lis_test.background)
 
 let
-    _signals = shot(lisg_test, 30)
+    _signals = shot(lis_random_test, 30)
     #
     plot()
     map(_signals) do s
@@ -40,7 +40,7 @@ let
     plot!(ylim = (0, :auto))
 end
 
-scg_test = SCurve(lisg_test, i_test);
+scg_test = SCurve(lis_random_test, i_test);
 
 let
     plot(th -> spectrum(sc_test, th), 0, 3)

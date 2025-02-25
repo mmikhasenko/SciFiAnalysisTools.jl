@@ -23,3 +23,8 @@ end
     @test location_bin_center(TLQMMSTuple((3, 3, 3, 5, 0, 0))) ==
           (x = 32 * 6 - 1, y = 8 * 3 - 1)
 end
+
+
+@testset "Simulations" begin
+    include("test-plot-sim.jl")
+end

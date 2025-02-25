@@ -86,7 +86,7 @@ md"""
 # ╔═╡ f72f1638-8fad-40b2-9821-b6be8f812bf6
 @with_kw struct LISRandomDelay{T}
     sipm::SiPM
-	delay_density::T
+    delay_density::T
     μ::Float16
     background::Float64
 end
@@ -97,7 +97,7 @@ function shot(lis::LISRandomDelay, n::Int)
     return map(1:n) do _
         amplitude = rand(Poisson(lis.μ)) + sipm.fluc * randn()
         amplitude *= amplitude > 0.5
-		position = rand(lis.delay_density)
+        position = rand(lis.delay_density)
         Signal(; shape = sipm, amplitude, position, lis.background)
     end
 end
@@ -116,12 +116,12 @@ end
 
 # ╔═╡ 7dbc790c-9bcc-4d43-aedf-cebec3314267
 lis_random_test = LISRandomDelay(;
-	sipm = sipm_test, delay_density=Normal(-30, 1), μ = 1.2, background = 0.4)
+    sipm = sipm_test, delay_density = Normal(-30, 1), μ = 1.2, background = 0.4)
 
 # ╔═╡ 342588c0-a2e9-4f1a-b112-eb121a3cc81a
 let
-	_signals = shot(lis_random_test, 30)
-	# 
+    _signals = shot(lis_random_test, 30)
+    #
     plot()
     map(_signals) do s
         plot!(t -> signal(s, t), -10, 200)
@@ -182,7 +182,7 @@ md"""
 # ╔═╡ 287623a1-71fc-4c2c-89dc-d1c7d20352c2
 begin
     @with_kw struct SimpleSCurve
-		μ::Float64
+        μ::Float64
         σ::Float64
         gain::Float64
         pedestal::Float64
@@ -197,12 +197,12 @@ begin
         σ = lis.sipm.fluc * gain
         SimpleSCurve(; lis.μ, σ, gain, pedestal)
     end
-	# 
-	struct ConvSCurve{LIS}
+    #
+    struct ConvSCurve{LIS}
         lis::LIS
-		i::Integrator
+        i::Integrator
     end
-    SCurve(lis::T, i::Integrator) where T<:LISRandomDelay = 
+    SCurve(lis::T, i::Integrator) where T <: LISRandomDelay =
         ConvSCurve(lis, i)
 end
 
@@ -223,39 +223,39 @@ end
 # ╔═╡ e20782ea-044e-477d-a446-0170a49ca55b
 function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
     @unpack i, lis = sc
-	@unpack μ, delay_density = lis
-	_sc(delay) = SCurve(
-		LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
-		i)
-	# 
-	lims = (-Inf, Inf)
+    @unpack μ, delay_density = lis
+    _sc(delay) = SCurve(
+        LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
+        i)
+    #
+    lims = (-Inf, Inf)
     _value = quadgk(lims...) do delay
-		pdf(delay_density, delay) * spectrum(_sc(delay), th)
-	end[1]
-	_value
+        pdf(delay_density, delay) * spectrum(_sc(delay), th)
+    end[1]
+    _value
 end
 
 # ╔═╡ 2eea2a42-6b37-4042-bdc7-44f4f804cebf
 function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
     @unpack i, lis = sc
-	@unpack μ, delay_density = lis
-	_sc(delay) = SCurve(
-		LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
-		i)
-	# 
-	lims = (-Inf, Inf)
+    @unpack μ, delay_density = lis
+    _sc(delay) = SCurve(
+        LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background),
+        i)
+    #
+    lims = (-Inf, Inf)
     _value = quadgk(lims...) do delay
-		pdf(delay_density, delay) * opposite_cdf(_sc(delay), th)
-	end[1]
-	_value
+        pdf(delay_density, delay) * opposite_cdf(_sc(delay), th)
+    end[1]
+    _value
 end
 
 # ╔═╡ 8d01998a-7f7c-412f-a6d4-6c49b5ed1386
-lisg_test = LISRandomDelay(; delay_density=Normal(lis_test.delay, 2.0),
-	lis_test.sipm, lis_test.μ, lis_test.background)
+lis_random_test = LISRandomDelay(; delay_density = Normal(lis_test.delay, 2.0),
+    lis_test.sipm, lis_test.μ, lis_test.background)
 
 # ╔═╡ 924cccc1-c541-43bb-8c21-afdff8d6b140
-scg_test = SCurve(lisg_test, i_test);
+scg_test = SCurve(lis_random_test, i_test);
 
 # ╔═╡ c56e47ee-8009-42d9-85db-47b9efd3c874
 function opposite_cdf(sc::SimpleSCurve, th)
@@ -276,14 +276,14 @@ sc_test = SCurve(lis_test, i_test);
 
 # ╔═╡ 778e0071-619e-4a70-ab58-4ebea3034153
 let
-	plot(th->spectrum(sc_test, th), 0, 3)
-	plot!(th->spectrum(scg_test, th), 0, 3)
+    plot(th -> spectrum(sc_test, th), 0, 3)
+    plot!(th -> spectrum(scg_test, th), 0, 3)
 end
 
 # ╔═╡ 58b58b4d-e382-4288-abc3-1cf3daa1beed
 let
-	plot(th->opposite_cdf(sc_test, th), 0, 3)
-	plot!(th->opposite_cdf(scg_test, th), 0, 3)
+    plot(th -> opposite_cdf(sc_test, th), 0, 3)
+    plot!(th -> opposite_cdf(scg_test, th), 0, 3)
 end
 
 # ╔═╡ 2ea6b53f-35f4-42a2-b7ed-52723a6848a0
@@ -299,13 +299,14 @@ let
 end
 
 # ╔═╡ 773c6a20-547a-4715-97e8-d182f499105c
-f(th) = let
-	lims = (-10, 10)
-	quadgk(lims...) do delay
-	opposite_cdf(SCurve(
-		LISFixedDelay(; sipm = sipm_test, delay, μ = 1.2, background = 0.4), i_test), th)
-end[1]/(lims[2]-lims[1])
-end
+f(th) =
+    let
+        lims = (-10, 10)
+        quadgk(lims...) do delay
+            opposite_cdf(SCurve(
+                    LISFixedDelay(; sipm = sipm_test, delay, μ = 1.2, background = 0.4), i_test), th)
+        end[1] / (lims[2] - lims[1])
+    end
 
 # ╔═╡ 0498e38c-6ebb-4697-806a-83870bff270e
 let

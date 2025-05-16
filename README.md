@@ -8,9 +8,6 @@
 [![Docs workflow Status](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/actions/workflows/Docs.yml/badge.svg?branch=main)](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/actions/workflows/Docs.yml?query=branch%3Amain)
 
 [![Coverage](https://codecov.io/gh/mmikhasenko/SciFiAnalysisTools.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/mmikhasenko/SciFiAnalysisTools.jl)
-[![DOI](https://zenodo.org/badge/DOI/FIXME)](https://doi.org/FIXME)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![All Contributors](https://img.shields.io/github/all-contributors/mmikhasenko/SciFiAnalysisTools.jl?labelColor=5e1ec7&color=c0ffee&style=flat-square)](#contributors)
 
 This package provides tools for analyzing data from the LHCb SciFi detector.
 

@@ -25,8 +25,9 @@ Args:
 Returns:
     A string in the format "T{station}L{layer}Q{quarter}M{module}_mat{mat}_sipm{sipm}".
 """
-TLQMD(ch_id) =
-    "T$(ch_id._station)L$(ch_id._layer)Q$(ch_id._quarter)M$(ch_id._module)_mat$(ch_id._mat)_sipm$(ch_id._sipm)"
+TLQMD(
+    ch_id,
+) = "T$(ch_id._station)L$(ch_id._layer)Q$(ch_id._quarter)M$(ch_id._module)_mat$(ch_id._mat)_sipm$(ch_id._sipm)"
 
 
 function take_bits(input, mask)

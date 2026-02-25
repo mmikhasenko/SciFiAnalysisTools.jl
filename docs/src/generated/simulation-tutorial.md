@@ -46,11 +46,7 @@ const SCURVE_OFFSET = 0.12
 const SCURVE_LINE_WIDTH = 2.2
 const SCURVE_ANNOTATE_X_POS = 3.35
 const SCURVE_ANNOTATE_Y_OFFSET = 0.06
-const SCURVE_ANNOTATE_FONT_SIZE = 8
-````
-
-````
-8
+const SCURVE_ANNOTATE_FONT_SIZE = 8;
 ````
 
 ## Stacked Light-Yield Spectra
@@ -147,11 +143,10 @@ savefig(p_scurve, scurve_path);
 
 - The broadening of peak widths is controlled by `SiPM(..., fluc)`.
 - `SCurve(lis, integrator)` provides an analytic model used for both:
-  - `spectrum(sc, x)` for density curves
-  - `opposite_cdf(sc, threshold)` for S-curves
+    - `spectrum(sc, x)` for density curves
+    - `opposite_cdf(sc, threshold)` for S-curves
 - To tune realism, adjust `fluc`, integration window, and baseline/background.
 
 ---
 
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
-

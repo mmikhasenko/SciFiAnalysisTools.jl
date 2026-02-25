@@ -13,7 +13,13 @@ DocMeta.setdocmeta!(
 const literate_input = joinpath(@__DIR__, "literate", "simulation_tutorial.jl")
 const literate_output = joinpath(@__DIR__, "src", "generated")
 mkpath(literate_output)
-Literate.markdown(literate_input, literate_output; name = "simulation-tutorial", documenter = true, execute = true)
+Literate.markdown(
+    literate_input,
+    literate_output;
+    name = "simulation-tutorial",
+    documenter = true,
+    execute = true,
+)
 
 const page_rename = Dict("developer.md" => "Developer docs") # Without the numbers
 

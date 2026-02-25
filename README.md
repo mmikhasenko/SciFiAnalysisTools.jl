@@ -1,6 +1,5 @@
 # SciFiAnalysisTools
 
-[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://mmikhasenko.github.io/SciFiAnalysisTools.jl/stable)
 [![In development documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://mmikhasenko.github.io/SciFiAnalysisTools.jl/dev)
 [![Build Status](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/workflows/Test/badge.svg)](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/actions)
 [![Test workflow status](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/actions/workflows/Test.yml/badge.svg?branch=main)](https://github.com/mmikhasenko/SciFiAnalysisTools.jl/actions/workflows/Test.yml?query=branch%3Amain)

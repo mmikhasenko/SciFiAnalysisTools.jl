@@ -408,9 +408,7 @@ function plot_summary(pars)
         p3,
         size = (900, 300),
         layout = grid(1, 3),
-        title = [
-            "Signal Integration" "Threshold Scan" "Lite Time Scan"
-        ],
+        title = ["Signal Integration" "Threshold Scan" "Lite Time Scan"],
         xlab = ["t [ns]" "threshold [DAC]" "Δt [ns]"],
         bottom_margin = 4mm,
     )
@@ -431,7 +429,7 @@ let
     delay_one_direction = range(-40, 50, 100)
     delay_cycle = vcat(delay_one_direction, reverse(delay_one_direction))
     m = div(length(delay_one_direction), 2)
-    from_center = vcat(delay_cycle[m:end], delay_cycle[1:m-1])
+    from_center = vcat(delay_cycle[m:end], delay_cycle[1:(m-1)])
     anim = @animate for delay in from_center
         lis = LISFixedDelay(; sipm = sipm0, delay, μ = 0.6, background = 0.5)
         plot_summary((; pars..., lis))

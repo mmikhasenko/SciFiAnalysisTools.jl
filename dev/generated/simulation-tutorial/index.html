@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>SciFi Simulation Tutorial · SciFiAnalysisTools.jl</title><meta name="title" content="SciFi Simulation Tutorial · SciFiAnalysisTools.jl"/><meta property="og:title" content="SciFi Simulation Tutorial · SciFiAnalysisTools.jl"/><meta property="twitter:title" content="SciFi Simulation Tutorial · SciFiAnalysisTools.jl"/><meta name="description" content="Documentation for SciFiAnalysisTools.jl."/><meta property="og:description" content="Documentation for SciFiAnalysisTools.jl."/><meta property="twitter:description" content="Documentation for SciFiAnalysisTools.jl."/><meta property="og:url" content="https://mmikhasenko.github.io/SciFiAnalysisTools.jl/generated/simulation-tutorial/"/><meta property="twitter:url" content="https://mmikhasenko.github.io/SciFiAnalysisTools.jl/generated/simulation-tutorial/"/><link rel="canonical" href="https://mmikhasenko.github.io/SciFiAnalysisTools.jl/generated/simulation-tutorial/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">SciFiAnalysisTools.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">SciFiAnalysisTools</a></li><li class="is-active"><a class="tocitem" href>SciFi Simulation Tutorial</a><ul class="internal"><li><a class="tocitem" href="#Stacked-Light-Yield-Spectra"><span>Stacked Light-Yield Spectra</span></a></li><li><a class="tocitem" href="#Stacked-S-Curves"><span>Stacked S-Curves</span></a></li><li><a class="tocitem" href="#Notes"><span>Notes</span></a></li></ul></li><li><a class="tocitem" href="../../90-contributing/">Contributing guidelines</a></li><li><a class="tocitem" href="../../91-developer/">Developer documentation</a></li><li><a class="tocitem" href="../../95-reference/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>SciFi Simulation Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>SciFi Simulation Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/mmikhasenko/SciFiAnalysisTools.jl/blob/main/docs/literate/simulation_tutorial.jl#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="SciFi-Simulation-Tutorial"><a class="docs-heading-anchor" href="#SciFi-Simulation-Tutorial">SciFi Simulation Tutorial</a><a id="SciFi-Simulation-Tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#SciFi-Simulation-Tutorial" title="Permalink"></a></h1><p>This tutorial demonstrates how to generate and compare stacked spectra and stacked S-curves for a group of channels using <code>SciFiAnalysisTools.jl</code>.</p><p>The setup reproduces the scenario explored interactively:</p><ul><li>10 channels</li><li>mean light yield <code>mu</code> decreasing linearly from <code>1.5</code> to <code>1.0</code></li><li>broadened peaks (<code>fluc = 0.18</code>)</li><li>boxed plotting theme</li></ul><pre><code class="language-julia hljs">using SciFiAnalysisTools
+using Plots</code></pre><p>Use a non-interactive GR backend in CI/headless environments.</p><pre><code class="language-julia hljs">ENV[&quot;GKSwstype&quot;] = &quot;100&quot;
+theme(:boxed)
+
+outdir = joinpath(@__DIR__, &quot;..&quot;, &quot;assets&quot;, &quot;tutorial&quot;)
+mkpath(outdir)
+
+sipm = SiPM(2, 20, 0.18)
+integrator = Integrator(; window = (20.0, 120.0), sampling_Δt = 5.5, factor_to_DAC = 1.0)
+mus = collect(range(1.5, stop = 1.0, length = 10));
+
+const DENSITY_PLOT_SIZE = (1100, 650)
+const DENSITY_XLIMS = (-0.1, 3.6)
+const DENSITY_OFFSET_MULTIPLIER = 0.18
+const DENSITY_LINE_WIDTH = 2.1
+const DENSITY_ANNOTATE_X_POS = 3.55
+const DENSITY_ANNOTATE_Y_OFFSET_MULTIPLIER = 0.03
+const DENSITY_ANNOTATE_FONT_SIZE = 8
+
+const SCURVE_PLOT_SIZE = (1400, 640)
+const SCURVE_XLIMS = (-0.05, 3.4)
+const SCURVE_OFFSET = 0.12
+const SCURVE_LINE_WIDTH = 2.2
+const SCURVE_ANNOTATE_X_POS = 3.35
+const SCURVE_ANNOTATE_Y_OFFSET = 0.06
+const SCURVE_ANNOTATE_FONT_SIZE = 8;</code></pre><h2 id="Stacked-Light-Yield-Spectra"><a class="docs-heading-anchor" href="#Stacked-Light-Yield-Spectra">Stacked Light-Yield Spectra</a><a id="Stacked-Light-Yield-Spectra-1"></a><a class="docs-heading-anchor-permalink" href="#Stacked-Light-Yield-Spectra" title="Permalink"></a></h2><pre><code class="language-julia hljs">x_density = collect(range(-0.2, stop = 3.8, length = 2600))
+density_curves = map(mus) do mu
+    lis = LISFixedDelay(; sipm = sipm, delay = -30.0, μ = mu, background = 0.4)
+    sc = SCurve(lis, integrator)
+    [spectrum(sc, x) for x in x_density]
+end
+
+max_density = maximum(vcat(density_curves...))
+density_offset = DENSITY_OFFSET_MULTIPLIER * max_density
+
+p_density = plot(
+    size = DENSITY_PLOT_SIZE,
+    xlab = &quot;charge [DAC]&quot;,
+    ylab = &quot;density + offset&quot;,
+    title = &quot;Stacked light-yield spectra (10 channels, mu: 1.5 -&gt; 1.0)&quot;,
+    legend = false,
+    xlims = DENSITY_XLIMS,
+)
+
+colors = palette(:batlow, length(mus))
+for (idx, (mu, curve)) in enumerate(zip(mus, density_curves))
+    y = curve .+ (idx - 1) * density_offset
+    plot!(p_density, x_density, y, lw = DENSITY_LINE_WIDTH, c = colors[idx])
+    annotate!(
+        p_density,
+        DENSITY_ANNOTATE_X_POS,
+        (idx - 1) * density_offset + DENSITY_ANNOTATE_Y_OFFSET_MULTIPLIER * max_density,
+        text(
+            &quot;ch$(idx)  mu=$(round(mu, digits = 2))&quot;,
+            DENSITY_ANNOTATE_FONT_SIZE,
+            colors[idx],
+            :right,
+        ),
+    )
+end
+plot!(p_density, yticks = false)
+
+density_path = joinpath(outdir, &quot;stacked_density_mu15_to_10.png&quot;);
+savefig(p_density, density_path);</code></pre><p><img src="../../assets/tutorial/stacked_density_mu15_to_10.png" alt="Stacked spectra"/></p><h2 id="Stacked-S-Curves"><a class="docs-heading-anchor" href="#Stacked-S-Curves">Stacked S-Curves</a><a id="Stacked-S-Curves-1"></a><a class="docs-heading-anchor-permalink" href="#Stacked-S-Curves" title="Permalink"></a></h2><pre><code class="language-julia hljs">x_scurve = collect(range(-0.2, stop = 3.8, length = 2600))
+scurve_curves = map(mus) do mu
+    lis = LISFixedDelay(; sipm = sipm, delay = -30.0, μ = mu, background = 0.4)
+    sc = SCurve(lis, integrator)
+    [opposite_cdf(sc, x) for x in x_scurve]
+end
+
+scurve_offset = SCURVE_OFFSET
+
+p_scurve = plot(
+    size = SCURVE_PLOT_SIZE,
+    xlab = &quot;threshold [DAC]&quot;,
+    ylab = &quot;ratio(&gt;thr) + offset&quot;,
+    title = &quot;Stacked S-curves (10 channels, mu: 1.5 -&gt; 1.0)&quot;,
+    legend = false,
+    xlims = SCURVE_XLIMS,
+)
+
+for (idx, (mu, curve)) in enumerate(zip(mus, scurve_curves))
+    y = curve .+ (idx - 1) * scurve_offset
+    plot!(p_scurve, x_scurve, y, lw = SCURVE_LINE_WIDTH, c = colors[idx])
+    annotate!(
+        p_scurve,
+        SCURVE_ANNOTATE_X_POS,
+        (idx - 1) * scurve_offset + SCURVE_ANNOTATE_Y_OFFSET,
+        text(
+            &quot;ch$(idx)  mu=$(round(mu, digits = 2))&quot;,
+            SCURVE_ANNOTATE_FONT_SIZE,
+            colors[idx],
+            :right,
+        ),
+    )
+end
+plot!(p_scurve, yticks = false)
+
+scurve_path = joinpath(outdir, &quot;stacked_scurves_mu15_to_10.png&quot;);
+savefig(p_scurve, scurve_path);</code></pre><p><img src="../../assets/tutorial/stacked_scurves_mu15_to_10.png" alt="Stacked S-curves"/></p><h2 id="Notes"><a class="docs-heading-anchor" href="#Notes">Notes</a><a id="Notes-1"></a><a class="docs-heading-anchor-permalink" href="#Notes" title="Permalink"></a></h2><ul><li>The broadening of peak widths is controlled by <code>SiPM(..., fluc)</code>.</li><li><code>SCurve(lis, integrator)</code> provides an analytic model used for both:<ul><li><code>spectrum(sc, x)</code> for density curves</li><li><code>opposite_cdf(sc, threshold)</code> for S-curves</li></ul></li><li>To tune realism, adjust <code>fluc</code>, integration window, and baseline/background.</li></ul><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« SciFiAnalysisTools</a><a class="docs-footer-nextpage" href="../../90-contributing/">Contributing guidelines »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Wednesday 25 February 2026 10:12">Wednesday 25 February 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

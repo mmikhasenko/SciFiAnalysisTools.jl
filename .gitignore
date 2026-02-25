@@ -5,3 +5,5 @@ Manifest.toml
 docs/build/
 *.rej
 node_modules
+docs/src/generated/simulation-tutorial.md
+docs/src/assets/tutorial/*.png

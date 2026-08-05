@@ -13,7 +13,11 @@ begin
     using Parameters
     using QuadGK
     using PlutoUI
+	using JSON
 end
+
+# ╔═╡ dc1eb9b8-36de-42f5-9d37-e8d528c66da1
+
 
 # ╔═╡ 2b73f186-5f83-4f0f-adaa-6f373781bd41
 theme(:boxed, xlab = "t [ns]")
@@ -40,8 +44,17 @@ begin
     end
 end
 
+# ╔═╡ b3903d47-186d-42bc-b791-f1babad866b0
+sipm_models = let
+	d = open(joinpath("..", "data", "sipm_fit.json")) do io
+		JSON.parse(io)
+	end
+	Dict(k => SiPM([d[k][string(s)] for s in fieldnames(SiPM)]...) for k in keys(d))
+end
+
 # ╔═╡ 60c7f3e4-eb88-4ba8-a4c5-e7f3058d280f
-const sipm_test = SiPM(3, 3, 0.1; n_τ_long = 3, c_long = 0.002);
+const sipm_test = sipm_models["p5pz6"]
+# SiPM(3, 3, 0.1; n_τ_long = 3, c_long = 0.002);
 
 # ╔═╡ 48534f4d-a041-4358-8f75-00ef00053060
 begin
@@ -440,7 +453,7 @@ function plot_summary(pars)
     scatter!(
         [lis.delay],
         [opposite_cdf(SCurve(LISFixedDelay(lis; lis.delay), i), lts_threshold)],
-        c = 3,
+        c = :red,
         left_margin = 5mm,
     )
     #
@@ -458,13 +471,13 @@ end
 
 # ╔═╡ e13af040-e8c0-4617-a2ad-0cbb54d7b5db
 animation_pars = let
-    sipm = SiPM(3, 3, 0.2; n_τ_long = 3, c_long = 0.002)
-    i = Integrator(; window = 5 .+ (0, 10), sampling_Δt = 0.5, factor_to_DAC = 50.0)
+    sipm = sipm_models["p5pz6"] #SiPM(3, 3, 0.2; n_τ_long = 3, c_long = 0.002)
+    i = Integrator(; window = 2 .+ (0, 10), sampling_Δt = 0.5, factor_to_DAC = 50.0)
     #
     signal_time_range = (-10, 30)
     delay_scan_range = range(-25, 25, 100)
     threshold_scan_range = 0:200
-    lts_threshold = 70
+    lts_threshold = 60
     #
     (;
         sipm,
@@ -503,6 +516,7 @@ end
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
@@ -510,6 +524,7 @@ QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 
 [compat]
 Distributions = "~0.25.117"
+JSON = "~0.21.4"
 Parameters = "~0.12.3"
 Plots = "~1.40.9"
 PlutoUI = "~0.7.23"
@@ -522,7 +537,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.5"
 manifest_format = "2.0"
-project_hash = "03dc1fcd52830a975673b8826ec9424f0f0c6cc4"
+project_hash = "d75bbb6a94d99651f03bef69731bb137b56cf134"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -1801,6 +1816,8 @@ version = "1.4.1+2"
 
 # ╔═╡ Cell order:
 # ╠═e30bb362-efba-11ef-27d4-5b71ea820116
+# ╠═dc1eb9b8-36de-42f5-9d37-e8d528c66da1
+# ╠═b3903d47-186d-42bc-b791-f1babad866b0
 # ╠═2b73f186-5f83-4f0f-adaa-6f373781bd41
 # ╠═f8d91ef1-e0c7-4afb-be36-80939b2e7286
 # ╠═60c7f3e4-eb88-4ba8-a4c5-e7f3058d280f

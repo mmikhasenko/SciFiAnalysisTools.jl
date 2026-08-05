@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.4
+# v0.20.21
 
 using Markdown
 using InteractiveUtils
@@ -24,19 +24,24 @@ begin
         m::Float64
         τ::Float64
         fluc::Float64
-        norm::Float64
+		# over compensation
+		n_τ_long::Float64 # how much longer the long component
+		c_long::Float64 # coeff for the long component
+        norm::Float64		
     end
-    signal(s::SiPM, t) = t < 0 ? zero(t) : (t / s.τ)^s.m * exp(-t / s.τ) * s.norm
-    function SiPM(m, τ, fluc)
-        _s = SiPM(m, τ, fluc, 1.0)
+    signal(s::SiPM, t) = t < 0 ? zero(t) : (t / s.τ)^s.m * (
+		exp(-t / s.τ) - s.c_long * exp(-t / (s.τ * s.n_τ_long))
+	) * s.norm
+    function SiPM(m, τ, fluc; n_τ_long=3, c_long=2e-3)
+        _s = SiPM(m, τ, fluc, n_τ_long, c_long, 1.0)
         # n = quadgk(t->signal(_s, t), 0, Inf)[1]
         n = maximum(map(t -> signal(_s, t), 0:200))[1]
-        SiPM(m, τ, fluc, 1 / n)
+        SiPM(m, τ, fluc, n_τ_long, c_long, 1 / n)
     end
 end
 
 # ╔═╡ 60c7f3e4-eb88-4ba8-a4c5-e7f3058d280f
-const sipm_test = SiPM(2, 20, 0.1);
+const sipm_test = SiPM(3, 3, 0.1; n_τ_long=3, c_long=0.002);
 
 # ╔═╡ 48534f4d-a041-4358-8f75-00ef00053060
 begin
@@ -50,7 +55,13 @@ begin
 end
 
 # ╔═╡ 71dc22cc-1371-4fbc-88a2-180562b8df1a
-plot(t -> signal(sipm_test, t), -10, 200, title = "SiPM shape")
+begin
+	plot(t -> signal(sipm_test, t), -20, 100, title = "SiPM shape", lw=3)
+	vspan!([-20,0], fillcolor=:orange, fillalpha=0.3)
+	vspan!([10,100], fillcolor=:orange, fillalpha=0.3)
+	vline!([-20:20:100], lc=:gray, ls=:dash)
+	plot!(ylim=(-0.2, 1.2))
+end
 
 # ╔═╡ c0aabc92-8d43-4735-bd21-f535d2887075
 md"""
@@ -66,7 +77,7 @@ md"""
 end
 
 # ╔═╡ 1acdc740-df1d-4f3f-ae47-dea12c51da7e
-lis_test = LISFixedDelay(; sipm = sipm_test, delay = -30, μ = 2.2, background = 0.4)
+lis_test = LISFixedDelay(; sipm = sipm_test, delay = 3.0, μ = 1.2, background = 0.1)
 
 # ╔═╡ 09fc9e3b-3872-46cb-a528-72538491288d
 function shot(lis::LISFixedDelay, n::Int)
@@ -109,29 +120,37 @@ example_signals = shot(lis_test, 30)
 begin
     plot()
     map(example_signals) do s
-        plot!(t -> signal(s, t), -10, 200)
+        plot!(t -> signal(s, t), -10, 100, c=:darkgreen, lw=2)
     end
     plot!(ylim = (0, :auto))
 end
 
 # ╔═╡ 7dbc790c-9bcc-4d43-aedf-cebec3314267
-lis_random_test = LISRandomDelay(;
+lis_unit_test = LISRandomDelay(;
     sipm = sipm_test,
-    delay_density = Normal(-30, 1),
-    μ = 1.2,
+    delay_density = Normal(10, 1),
+    μ = 2.2,
     background = 0.4,
 )
 
 # ╔═╡ 342588c0-a2e9-4f1a-b112-eb121a3cc81a
 let
-    _signals = shot(lis_random_test, 30)
+    _signals = shot(lis_unit_test, 30)
     #
     plot()
     map(_signals) do s
-        plot!(t -> signal(s, t), -10, 200)
+        plot!(t -> signal(s, t), -10, 100, c=:darkgreen, lw=1.3)
     end
     plot!(ylim = (0, :auto))
 end
+
+# ╔═╡ 381fd2dd-ac66-4307-8041-2f20057eed7b
+lis_random_test = LISRandomDelay(;
+    delay_density = Normal(lis_test.delay, 2.0),
+    lis_test.sipm,
+    lis_test.μ,
+    lis_test.background,
+)
 
 # ╔═╡ 5db596ea-455d-4b66-8354-1e8ea3837800
 md"""
@@ -154,13 +173,17 @@ function sample_integrate(i::Integrator, s::Signal)
 end
 
 # ╔═╡ c8c3814e-58ea-452f-9137-4b370097f018
-i_test = Integrator(; window = (20, 120), sampling_Δt = 5.5, factor_to_DAC = 1.0)
+i_test = Integrator(;
+	window = 5 .+ (0, 10),
+	sampling_Δt = 10/100, # 10 ns, 100 points
+	factor_to_DAC = 1.0)
 
 # ╔═╡ e99af6fc-2ff7-4775-8504-c4ee4338582b
 _signals = shot(lis_test, 10_000)
 
 # ╔═╡ 0ae4dcd2-bacf-460f-a9f6-1afb72a3d8b2
-stephist(sample_integrate.(Ref(i_test), _signals), bins = 100, xlab = "charge [DAC]")
+stephist(sample_integrate.(Ref(i_test), _signals),
+		 bins = 160, xlab = "charge [DAC]", fill=0, fillcolor=:blue, fillalpha=0.3)
 
 # ╔═╡ aaf709dd-b071-4835-85e7-9f4d88a3a279
 function threshold_scan(lis::LISFixedDelay, i::Integrator, scan, nSample = 10_000)
@@ -173,10 +196,10 @@ function threshold_scan(lis::LISFixedDelay, i::Integrator, scan, nSample = 10_00
 end
 
 # ╔═╡ 8beef4cb-febd-4711-98bb-adc6f8b94c5f
-scan_test = threshold_scan(lis_test, i_test, -1:0.05:3);
+scan_test = threshold_scan(lis_test, i_test, -1:0.1:10);
 
 # ╔═╡ 69b8d420-fde0-49e7-a59b-3aeccefa0a5f
-plot(scan_test..., xlab = "charge [DAC]")
+plot(scan_test..., xlab = "charge [DAC]", lw=2, ylim=(-0.1,1.1), fill=0, fillalpha=0.3, c=:red)
 
 # ╔═╡ 43441077-350a-4c00-9ad6-44b1b3a8c94a
 md"""
@@ -192,13 +215,26 @@ begin
         pedestal::Float64
     end
     #
+	function spectrum(sc::SimpleSCurve, th)
+	    @unpack μ, σ, gain, pedestal = sc
+	    a_dist = Poisson(μ)
+	    pedestal_pdf = Normal(pedestal, σ / 3)
+	    _value = pdf(a_dist, 0) * pdf(pedestal_pdf, th)
+	    k_max = max(10μ, 3)
+	    _value += sum(1:round(Int, k_max)) do k
+	        a = pdf(a_dist, k)
+	        a * pdf(Normal(pedestal + k * gain, σ), th)
+	    end
+	    _value
+	end
+	# 
     function SCurve(lis::LISFixedDelay, i::Integrator)
         zero_pe = Signal(lis.sipm, 0.0, lis.delay, lis.background)
         one_pe = Signal(lis.sipm, 1.0, lis.delay, lis.background)
         pedestal = sample_integrate(i, zero_pe)
         gain = sample_integrate(i, one_pe) - pedestal
         #
-        σ = lis.sipm.fluc * gain
+        σ = max(lis.sipm.fluc * gain, 0)
         SimpleSCurve(; lis.μ, σ, gain, pedestal)
     end
     #
@@ -207,34 +243,31 @@ begin
         i::Integrator
     end
     SCurve(lis::T, i::Integrator) where {T<:LISRandomDelay} = ConvSCurve(lis, i)
+	# 
+	function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
+	    @unpack i, lis = sc
+	    @unpack μ, delay_density = lis
+	    _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
+	    #
+	    lims = (-Inf, Inf)
+	    _value = quadgk(lims...) do delay
+	        pdf(delay_density, delay) * spectrum(_sc(delay), th)
+	    end[1]
+	    _value
+	end
 end
 
-# ╔═╡ 96720ee7-1603-4fb6-89f9-11866ef580f6
-function spectrum(sc::SimpleSCurve, th)
-    @unpack μ, σ, gain, pedestal = sc
-    a_dist = Poisson(μ)
-    pedestal_pdf = Normal(pedestal, σ / 3)
-    _value = pdf(a_dist, 0) * pdf(pedestal_pdf, th)
-    k_max = max(10μ, 3)
-    _value += sum(1:round(Int, k_max)) do k
-        a = pdf(a_dist, k)
-        a * pdf(Normal(pedestal + k * gain, σ), th)
-    end
-    _value
-end
+# ╔═╡ 586836c7-4e22-4c3d-8bbe-6f16f0cae114
+lis_test isa SimpleSCurve
 
-# ╔═╡ e20782ea-044e-477d-a446-0170a49ca55b
-function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
-    @unpack i, lis = sc
-    @unpack μ, delay_density = lis
-    _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
-    #
-    lims = (-Inf, Inf)
-    _value = quadgk(lims...) do delay
-        pdf(delay_density, delay) * spectrum(_sc(delay), th)
-    end[1]
-    _value
-end
+# ╔═╡ 924cccc1-c541-43bb-8c21-afdff8d6b140
+scg_test = SCurve(lis_random_test, i_test)
+
+# ╔═╡ 6655727b-163c-42d0-a208-593e6e058ab4
+sc_test = SCurve(lis_test, i_test)
+
+# ╔═╡ c8000e1c-3802-4e6b-918b-40061082f577
+ spectrum(scg_test, 1.2)
 
 # ╔═╡ 2eea2a42-6b37-4042-bdc7-44f4f804cebf
 function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
@@ -249,16 +282,11 @@ function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
     _value
 end
 
-# ╔═╡ 8d01998a-7f7c-412f-a6d4-6c49b5ed1386
-lis_random_test = LISRandomDelay(;
-    delay_density = Normal(lis_test.delay, 2.0),
-    lis_test.sipm,
-    lis_test.μ,
-    lis_test.background,
-)
-
-# ╔═╡ 924cccc1-c541-43bb-8c21-afdff8d6b140
-scg_test = SCurve(lis_random_test, i_test);
+# ╔═╡ 778e0071-619e-4a70-ab58-4ebea3034153
+let
+    plot(th -> spectrum(sc_test, th), 0, 10)
+    plot!(th -> spectrum(scg_test, th), 0, 10, lc=:red)
+end
 
 # ╔═╡ c56e47ee-8009-42d9-85db-47b9efd3c874
 function opposite_cdf(sc::SimpleSCurve, th)
@@ -272,21 +300,6 @@ function opposite_cdf(sc::SimpleSCurve, th)
         a * (1 - cdf(Normal(pedestal + k * gain, σ), th))
     end
     _value
-end
-
-# ╔═╡ 6655727b-163c-42d0-a208-593e6e058ab4
-sc_test = SCurve(lis_test, i_test);
-
-# ╔═╡ 778e0071-619e-4a70-ab58-4ebea3034153
-let
-    plot(th -> spectrum(sc_test, th), 0, 3)
-    plot!(th -> spectrum(scg_test, th), 0, 3)
-end
-
-# ╔═╡ 58b58b4d-e382-4288-abc3-1cf3daa1beed
-let
-    plot(th -> opposite_cdf(sc_test, th), 0, 3)
-    plot!(th -> opposite_cdf(scg_test, th), 0, 3)
 end
 
 # ╔═╡ 2ea6b53f-35f4-42a2-b7ed-52723a6848a0
@@ -308,7 +321,8 @@ f(th) =
         quadgk(lims...) do delay
             opposite_cdf(
                 SCurve(
-                    LISFixedDelay(; sipm = sipm_test, delay, μ = 1.2, background = 0.4),
+                    LISFixedDelay(;
+								  sipm = sipm_test, delay, μ = 2.2, background = 0.4),
                     i_test,
                 ),
                 th,
@@ -319,7 +333,6 @@ f(th) =
 # ╔═╡ 0498e38c-6ebb-4697-806a-83870bff270e
 let
     plot(xlab = "charge [DAC]")
-    _sc = SCurve(lis_test, i_test)
     plot!(f, -1, 3, lw = 1, lab = "exact")
     plot!()
 end
@@ -347,15 +360,29 @@ function light_time_scan(
     (; scan = collect(scan), ratios)
 end
 
+# ╔═╡ c58b5263-2c19-446f-9481-c3b792ecfbc3
+threshold_test = 1.9
+
 # ╔═╡ fb950472-67c6-43f2-97e1-c7881870212b
-light_time_scan_test = light_time_scan(lis_test, i_test, -150:1.1:200, 1.5);
+light_time_scan_all = map(-2:2) do i_slot
+	t_start = i_slot * 25 # ns
+	t_end = (i_slot+1) * 25 # ns
+	light_time_scan(lis_test, i_test, t_start:1.0:t_end, threshold_test);
+end
+
+# ╔═╡ cac079aa-00a8-4b9e-9109-383cbc3d90ae
+light_time_scan_test = light_time_scan_all[3]
 
 # ╔═╡ cc816cc7-5de2-4639-a6e4-025a30d8a50f
 let
-    plot(light_time_scan_test..., lab = "numerically")
-    plot!(light_time_scan_test.scan, lab = "analytically") do delay
-        opposite_cdf(SCurve(LISFixedDelay(lis_test; delay), i_test), 1.5)
-    end
+	plot()
+	for (c,lts) in zip([:blue, :orange, :green, :red, :purple], light_time_scan_all)
+	    scatter!(lts...; size=(800,200), lw=2, c, markershape=:d)
+	    plot!(lts.scan; lw=2, c) do delay
+	        opposite_cdf(SCurve(LISFixedDelay(lis_test; delay), i_test), threshold_test)
+	    end
+	end
+	plot!(ylim=(-0.01, :auto))
 end
 
 # ╔═╡ 5cd0a48f-b06e-49a0-b51a-b105ac9fc157
@@ -371,9 +398,10 @@ function plot_summary(pars)
     @unpack delay_scan_range, threshold_scan_range = pars
     @unpack signal_time_range = pars
     @unpack lts_threshold = pars
+	@unpack n_curves = pars
     #
     p1 = plot(ylims = (0, 4))
-    map(shot(lis, 50)) do s #amplitude
+    map(shot(lis, n_curves)) do s # amplitude
         # s = Signal(; shape=lis.sipm, amplitude, position = lis.delay, lis.background)
         plot!(t -> signal(s, t), signal_time_range..., c = 1, lw = 0.3)
     end
@@ -394,7 +422,7 @@ function plot_summary(pars)
     p3 = plot(delay_scan_range, ylims = (0, 1), ylab = "ratio(>thr)", lw = 2) do delay
         opposite_cdf(SCurve(LISFixedDelay(lis; delay), i), lts_threshold)
     end
-    vline!([lis.delay], c = 3)
+    vline!([lis.delay], c = :red)
     scatter!(
         [lis.delay],
         [opposite_cdf(SCurve(LISFixedDelay(lis; lis.delay), i), lts_threshold)],
@@ -414,27 +442,39 @@ function plot_summary(pars)
     )
 end
 
+# ╔═╡ e13af040-e8c0-4617-a2ad-0cbb54d7b5db
+animation_pars = let
+	sipm = SiPM(3, 3, 0.2; n_τ_long=3, c_long=0.002)
+    i = Integrator(; window = 5 .+ (0, 10), sampling_Δt = 0.5 , factor_to_DAC = 50.0)
+    #
+    signal_time_range = (-10, 30)
+    delay_scan_range = range(-25, 25, 100)
+    threshold_scan_range = 0:200
+    lts_threshold = 70
+    #
+    (; sipm, i, delay_scan_range, threshold_scan_range, signal_time_range, lts_threshold, n_curves=50)
+end
+
 # ╔═╡ d67aba64-cc79-406d-8c48-dc20729e616a
 let
-    sipm0 = SiPM(3, 6, 0.25)
-    i = Integrator(; window = (10, 60), sampling_Δt = 5.5, factor_to_DAC = 70.0)
-    #
-    signal_time_range = (-10, 120)
-    delay_scan_range = range(-50, 70, 100)
-    threshold_scan_range = 0:200
-    lts_threshold = 80
-    #
-    pars = (; i, delay_scan_range, threshold_scan_range, signal_time_range, lts_threshold)
-    #
-    delay_one_direction = range(-40, 50, 100)
+    delay_one_direction = range(-20, 20, 100)
     delay_cycle = vcat(delay_one_direction, reverse(delay_one_direction))
     m = div(length(delay_one_direction), 2)
     from_center = vcat(delay_cycle[m:end], delay_cycle[1:(m-1)])
     anim = @animate for delay in from_center
-        lis = LISFixedDelay(; sipm = sipm0, delay, μ = 0.6, background = 0.5)
-        plot_summary((; pars..., lis))
+        lis = LISFixedDelay(; animation_pars.sipm, delay, μ = 0.6, background = 0.5)
+        plot_summary((; animation_pars..., lis))
     end
     gif(anim, joinpath(@__DIR__, "..", "plots", "lite-time-scan.gif"); fps = 10)
+end
+
+# ╔═╡ 38559223-98da-4b67-8b9d-5b43b3027cfd
+let
+    delay = -5
+    lis = LISFixedDelay(; animation_pars.sipm, delay, μ = 0.6, background = 0.5)
+    plot_summary((; animation_pars..., lis))
+	savefig(joinpath(@__DIR__, "..", "plots", "lite-time-scan.pdf"))
+	plot!()
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -458,7 +498,7 @@ QuadGK = "~2.11.2"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.3"
+julia_version = "1.11.5"
 manifest_format = "2.0"
 project_hash = "03dc1fcd52830a975673b8826ec9424f0f0c6cc4"
 
@@ -1025,7 +1065,7 @@ version = "0.3.27+1"
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.5+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1755,6 +1795,7 @@ version = "1.4.1+2"
 # ╠═e32982d8-cf90-46d9-8cd8-f5889bcba0d5
 # ╠═7dbc790c-9bcc-4d43-aedf-cebec3314267
 # ╠═342588c0-a2e9-4f1a-b112-eb121a3cc81a
+# ╠═381fd2dd-ac66-4307-8041-2f20057eed7b
 # ╟─5db596ea-455d-4b66-8354-1e8ea3837800
 # ╠═0ff8f990-2997-40c1-ad81-9574785a211c
 # ╠═d3cee1c6-3677-4783-9a52-fc43f12a9d1d
@@ -1766,25 +1807,27 @@ version = "1.4.1+2"
 # ╠═69b8d420-fde0-49e7-a59b-3aeccefa0a5f
 # ╟─43441077-350a-4c00-9ad6-44b1b3a8c94a
 # ╠═287623a1-71fc-4c2c-89dc-d1c7d20352c2
-# ╠═96720ee7-1603-4fb6-89f9-11866ef580f6
-# ╠═e20782ea-044e-477d-a446-0170a49ca55b
+# ╠═586836c7-4e22-4c3d-8bbe-6f16f0cae114
+# ╠═924cccc1-c541-43bb-8c21-afdff8d6b140
+# ╠═6655727b-163c-42d0-a208-593e6e058ab4
+# ╠═c8000e1c-3802-4e6b-918b-40061082f577
 # ╠═2eea2a42-6b37-4042-bdc7-44f4f804cebf
 # ╠═778e0071-619e-4a70-ab58-4ebea3034153
-# ╠═8d01998a-7f7c-412f-a6d4-6c49b5ed1386
-# ╠═924cccc1-c541-43bb-8c21-afdff8d6b140
-# ╠═58b58b4d-e382-4288-abc3-1cf3daa1beed
 # ╠═c56e47ee-8009-42d9-85db-47b9efd3c874
-# ╠═6655727b-163c-42d0-a208-593e6e058ab4
 # ╠═2ea6b53f-35f4-42a2-b7ed-52723a6848a0
 # ╠═159f47b3-e18d-4446-b146-a620c9c10c9e
 # ╠═773c6a20-547a-4715-97e8-d182f499105c
 # ╠═0498e38c-6ebb-4697-806a-83870bff270e
 # ╟─04243deb-dd25-4fca-9e20-f3b5d49b3c8b
 # ╠═e167ee10-5811-4beb-9195-58a252ed0623
+# ╠═c58b5263-2c19-446f-9481-c3b792ecfbc3
 # ╠═fb950472-67c6-43f2-97e1-c7881870212b
+# ╠═cac079aa-00a8-4b9e-9109-383cbc3d90ae
 # ╠═cc816cc7-5de2-4639-a6e4-025a30d8a50f
 # ╟─5cd0a48f-b06e-49a0-b51a-b105ac9fc157
 # ╠═04bf78d3-15be-45f8-bf53-dc4ce25613ed
+# ╠═e13af040-e8c0-4617-a2ad-0cbb54d7b5db
 # ╠═d67aba64-cc79-406d-8c48-dc20729e616a
+# ╠═38559223-98da-4b67-8b9d-5b43b3027cfd
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

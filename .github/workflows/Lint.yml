@@ -27,7 +27,8 @@ jobs:
             - name: Use Julia cache
               uses: julia-actions/cache@v3
             - name: Install JuliaFormatter.jl
-              run: julia -e 'using Pkg; pkg"add JuliaFormatter"'
+              # Keep in sync with .pre-commit-config.yaml (hook uses system JuliaFormatter).
+              run: julia -e 'using Pkg; Pkg.add(PackageSpec(name="JuliaFormatter", version="2.12.4"))'
             - name: Setup Python
               uses: actions/setup-python@v6
               with:

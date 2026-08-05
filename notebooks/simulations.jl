@@ -381,7 +381,7 @@ threshold_test = 1.9
 light_time_scan_all = map(-2:2) do i_slot
     t_start = i_slot * 25 # ns
     t_end = (i_slot+1) * 25 # ns
-    light_time_scan(lis_test, i_test, t_start:1.0:t_end, threshold_test);
+    light_time_scan(lis_test, i_test, t_start:1.0:t_end, threshold_test)
 end
 
 # ╔═╡ cac079aa-00a8-4b9e-9109-383cbc3d90ae

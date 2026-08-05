@@ -24,15 +24,15 @@ begin
         m::Float64
         τ::Float64
         fluc::Float64
-		# over compensation
-		n_τ_long::Float64 # how much longer the long component
-		c_long::Float64 # coeff for the long component
-        norm::Float64		
+        # over compensation
+        n_τ_long::Float64 # how much longer the long component
+        c_long::Float64 # coeff for the long component
+        norm::Float64
     end
-    signal(s::SiPM, t) = t < 0 ? zero(t) : (t / s.τ)^s.m * (
-		exp(-t / s.τ) - s.c_long * exp(-t / (s.τ * s.n_τ_long))
-	) * s.norm
-    function SiPM(m, τ, fluc; n_τ_long=3, c_long=2e-3)
+    signal(s::SiPM, t) =
+        t < 0 ? zero(t) :
+        (t / s.τ)^s.m * (exp(-t / s.τ) - s.c_long * exp(-t / (s.τ * s.n_τ_long))) * s.norm
+    function SiPM(m, τ, fluc; n_τ_long = 3, c_long = 2e-3)
         _s = SiPM(m, τ, fluc, n_τ_long, c_long, 1.0)
         # n = quadgk(t->signal(_s, t), 0, Inf)[1]
         n = maximum(map(t -> signal(_s, t), 0:200))[1]
@@ -41,7 +41,7 @@ begin
 end
 
 # ╔═╡ 60c7f3e4-eb88-4ba8-a4c5-e7f3058d280f
-const sipm_test = SiPM(3, 3, 0.1; n_τ_long=3, c_long=0.002);
+const sipm_test = SiPM(3, 3, 0.1; n_τ_long = 3, c_long = 0.002);
 
 # ╔═╡ 48534f4d-a041-4358-8f75-00ef00053060
 begin
@@ -56,11 +56,11 @@ end
 
 # ╔═╡ 71dc22cc-1371-4fbc-88a2-180562b8df1a
 begin
-	plot(t -> signal(sipm_test, t), -20, 100, title = "SiPM shape", lw=3)
-	vspan!([-20,0], fillcolor=:orange, fillalpha=0.3)
-	vspan!([10,100], fillcolor=:orange, fillalpha=0.3)
-	vline!([-20:20:100], lc=:gray, ls=:dash)
-	plot!(ylim=(-0.2, 1.2))
+    plot(t -> signal(sipm_test, t), -20, 100, title = "SiPM shape", lw = 3)
+    vspan!([-20, 0], fillcolor = :orange, fillalpha = 0.3)
+    vspan!([10, 100], fillcolor = :orange, fillalpha = 0.3)
+    vline!([-20:20:100], lc = :gray, ls = :dash)
+    plot!(ylim = (-0.2, 1.2))
 end
 
 # ╔═╡ c0aabc92-8d43-4735-bd21-f535d2887075
@@ -120,7 +120,7 @@ example_signals = shot(lis_test, 30)
 begin
     plot()
     map(example_signals) do s
-        plot!(t -> signal(s, t), -10, 100, c=:darkgreen, lw=2)
+        plot!(t -> signal(s, t), -10, 100, c = :darkgreen, lw = 2)
     end
     plot!(ylim = (0, :auto))
 end
@@ -139,7 +139,7 @@ let
     #
     plot()
     map(_signals) do s
-        plot!(t -> signal(s, t), -10, 100, c=:darkgreen, lw=1.3)
+        plot!(t -> signal(s, t), -10, 100, c = :darkgreen, lw = 1.3)
     end
     plot!(ylim = (0, :auto))
 end
@@ -174,16 +174,23 @@ end
 
 # ╔═╡ c8c3814e-58ea-452f-9137-4b370097f018
 i_test = Integrator(;
-	window = 5 .+ (0, 10),
-	sampling_Δt = 10/100, # 10 ns, 100 points
-	factor_to_DAC = 1.0)
+    window = 5 .+ (0, 10),
+    sampling_Δt = 10/100, # 10 ns, 100 points
+    factor_to_DAC = 1.0,
+)
 
 # ╔═╡ e99af6fc-2ff7-4775-8504-c4ee4338582b
 _signals = shot(lis_test, 10_000)
 
 # ╔═╡ 0ae4dcd2-bacf-460f-a9f6-1afb72a3d8b2
-stephist(sample_integrate.(Ref(i_test), _signals),
-		 bins = 160, xlab = "charge [DAC]", fill=0, fillcolor=:blue, fillalpha=0.3)
+stephist(
+    sample_integrate.(Ref(i_test), _signals),
+    bins = 160,
+    xlab = "charge [DAC]",
+    fill = 0,
+    fillcolor = :blue,
+    fillalpha = 0.3,
+)
 
 # ╔═╡ aaf709dd-b071-4835-85e7-9f4d88a3a279
 function threshold_scan(lis::LISFixedDelay, i::Integrator, scan, nSample = 10_000)
@@ -199,7 +206,15 @@ end
 scan_test = threshold_scan(lis_test, i_test, -1:0.1:10);
 
 # ╔═╡ 69b8d420-fde0-49e7-a59b-3aeccefa0a5f
-plot(scan_test..., xlab = "charge [DAC]", lw=2, ylim=(-0.1,1.1), fill=0, fillalpha=0.3, c=:red)
+plot(
+    scan_test...,
+    xlab = "charge [DAC]",
+    lw = 2,
+    ylim = (-0.1, 1.1),
+    fill = 0,
+    fillalpha = 0.3,
+    c = :red,
+)
 
 # ╔═╡ 43441077-350a-4c00-9ad6-44b1b3a8c94a
 md"""
@@ -215,19 +230,19 @@ begin
         pedestal::Float64
     end
     #
-	function spectrum(sc::SimpleSCurve, th)
-	    @unpack μ, σ, gain, pedestal = sc
-	    a_dist = Poisson(μ)
-	    pedestal_pdf = Normal(pedestal, σ / 3)
-	    _value = pdf(a_dist, 0) * pdf(pedestal_pdf, th)
-	    k_max = max(10μ, 3)
-	    _value += sum(1:round(Int, k_max)) do k
-	        a = pdf(a_dist, k)
-	        a * pdf(Normal(pedestal + k * gain, σ), th)
-	    end
-	    _value
-	end
-	# 
+    function spectrum(sc::SimpleSCurve, th)
+        @unpack μ, σ, gain, pedestal = sc
+        a_dist = Poisson(μ)
+        pedestal_pdf = Normal(pedestal, σ / 3)
+        _value = pdf(a_dist, 0) * pdf(pedestal_pdf, th)
+        k_max = max(10μ, 3)
+        _value += sum(1:round(Int, k_max)) do k
+            a = pdf(a_dist, k)
+            a * pdf(Normal(pedestal + k * gain, σ), th)
+        end
+        _value
+    end
+    #
     function SCurve(lis::LISFixedDelay, i::Integrator)
         zero_pe = Signal(lis.sipm, 0.0, lis.delay, lis.background)
         one_pe = Signal(lis.sipm, 1.0, lis.delay, lis.background)
@@ -243,18 +258,18 @@ begin
         i::Integrator
     end
     SCurve(lis::T, i::Integrator) where {T<:LISRandomDelay} = ConvSCurve(lis, i)
-	# 
-	function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
-	    @unpack i, lis = sc
-	    @unpack μ, delay_density = lis
-	    _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
-	    #
-	    lims = (-Inf, Inf)
-	    _value = quadgk(lims...) do delay
-	        pdf(delay_density, delay) * spectrum(_sc(delay), th)
-	    end[1]
-	    _value
-	end
+    #
+    function spectrum(sc::ConvSCurve{<:LISRandomDelay}, th)
+        @unpack i, lis = sc
+        @unpack μ, delay_density = lis
+        _sc(delay) = SCurve(LISFixedDelay(; lis.sipm, delay, lis.μ, lis.background), i)
+        #
+        lims = (-Inf, Inf)
+        _value = quadgk(lims...) do delay
+            pdf(delay_density, delay) * spectrum(_sc(delay), th)
+        end[1]
+        _value
+    end
 end
 
 # ╔═╡ 586836c7-4e22-4c3d-8bbe-6f16f0cae114
@@ -267,7 +282,7 @@ scg_test = SCurve(lis_random_test, i_test)
 sc_test = SCurve(lis_test, i_test)
 
 # ╔═╡ c8000e1c-3802-4e6b-918b-40061082f577
- spectrum(scg_test, 1.2)
+spectrum(scg_test, 1.2)
 
 # ╔═╡ 2eea2a42-6b37-4042-bdc7-44f4f804cebf
 function opposite_cdf(sc::ConvSCurve{<:LISRandomDelay}, th)
@@ -285,7 +300,7 @@ end
 # ╔═╡ 778e0071-619e-4a70-ab58-4ebea3034153
 let
     plot(th -> spectrum(sc_test, th), 0, 10)
-    plot!(th -> spectrum(scg_test, th), 0, 10, lc=:red)
+    plot!(th -> spectrum(scg_test, th), 0, 10, lc = :red)
 end
 
 # ╔═╡ c56e47ee-8009-42d9-85db-47b9efd3c874
@@ -321,8 +336,7 @@ f(th) =
         quadgk(lims...) do delay
             opposite_cdf(
                 SCurve(
-                    LISFixedDelay(;
-								  sipm = sipm_test, delay, μ = 2.2, background = 0.4),
+                    LISFixedDelay(; sipm = sipm_test, delay, μ = 2.2, background = 0.4),
                     i_test,
                 ),
                 th,
@@ -365,9 +379,9 @@ threshold_test = 1.9
 
 # ╔═╡ fb950472-67c6-43f2-97e1-c7881870212b
 light_time_scan_all = map(-2:2) do i_slot
-	t_start = i_slot * 25 # ns
-	t_end = (i_slot+1) * 25 # ns
-	light_time_scan(lis_test, i_test, t_start:1.0:t_end, threshold_test);
+    t_start = i_slot * 25 # ns
+    t_end = (i_slot+1) * 25 # ns
+    light_time_scan(lis_test, i_test, t_start:1.0:t_end, threshold_test);
 end
 
 # ╔═╡ cac079aa-00a8-4b9e-9109-383cbc3d90ae
@@ -375,14 +389,14 @@ light_time_scan_test = light_time_scan_all[3]
 
 # ╔═╡ cc816cc7-5de2-4639-a6e4-025a30d8a50f
 let
-	plot()
-	for (c,lts) in zip([:blue, :orange, :green, :red, :purple], light_time_scan_all)
-	    scatter!(lts...; size=(800,200), lw=2, c, markershape=:d)
-	    plot!(lts.scan; lw=2, c) do delay
-	        opposite_cdf(SCurve(LISFixedDelay(lis_test; delay), i_test), threshold_test)
-	    end
-	end
-	plot!(ylim=(-0.01, :auto))
+    plot()
+    for (c, lts) in zip([:blue, :orange, :green, :red, :purple], light_time_scan_all)
+        scatter!(lts...; size = (800, 200), lw = 2, c, markershape = :d)
+        plot!(lts.scan; lw = 2, c) do delay
+            opposite_cdf(SCurve(LISFixedDelay(lis_test; delay), i_test), threshold_test)
+        end
+    end
+    plot!(ylim = (-0.01, :auto))
 end
 
 # ╔═╡ 5cd0a48f-b06e-49a0-b51a-b105ac9fc157
@@ -398,7 +412,7 @@ function plot_summary(pars)
     @unpack delay_scan_range, threshold_scan_range = pars
     @unpack signal_time_range = pars
     @unpack lts_threshold = pars
-	@unpack n_curves = pars
+    @unpack n_curves = pars
     #
     p1 = plot(ylims = (0, 4))
     map(shot(lis, n_curves)) do s # amplitude
@@ -444,15 +458,23 @@ end
 
 # ╔═╡ e13af040-e8c0-4617-a2ad-0cbb54d7b5db
 animation_pars = let
-	sipm = SiPM(3, 3, 0.2; n_τ_long=3, c_long=0.002)
-    i = Integrator(; window = 5 .+ (0, 10), sampling_Δt = 0.5 , factor_to_DAC = 50.0)
+    sipm = SiPM(3, 3, 0.2; n_τ_long = 3, c_long = 0.002)
+    i = Integrator(; window = 5 .+ (0, 10), sampling_Δt = 0.5, factor_to_DAC = 50.0)
     #
     signal_time_range = (-10, 30)
     delay_scan_range = range(-25, 25, 100)
     threshold_scan_range = 0:200
     lts_threshold = 70
     #
-    (; sipm, i, delay_scan_range, threshold_scan_range, signal_time_range, lts_threshold, n_curves=50)
+    (;
+        sipm,
+        i,
+        delay_scan_range,
+        threshold_scan_range,
+        signal_time_range,
+        lts_threshold,
+        n_curves = 50,
+    )
 end
 
 # ╔═╡ d67aba64-cc79-406d-8c48-dc20729e616a
@@ -473,8 +495,8 @@ let
     delay = -5
     lis = LISFixedDelay(; animation_pars.sipm, delay, μ = 0.6, background = 0.5)
     plot_summary((; animation_pars..., lis))
-	savefig(joinpath(@__DIR__, "..", "plots", "lite-time-scan.pdf"))
-	plot!()
+    savefig(joinpath(@__DIR__, "..", "plots", "lite-time-scan.pdf"))
+    plot!()
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001

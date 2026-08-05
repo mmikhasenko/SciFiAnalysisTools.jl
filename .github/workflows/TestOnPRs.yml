@@ -22,7 +22,6 @@ jobs:
         with:
             os: ubuntu-latest
             version: "1"
-            arch: x64
             allow_failure: false
             run_codecov: true
         secrets:

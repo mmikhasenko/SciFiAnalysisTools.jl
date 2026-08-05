@@ -4,6 +4,8 @@ using SciFiAnalysisTools.QuadGK
 using Plots
 using Test
 
+# Headless-friendly Plots backend for CI.
+ENV["GKSwstype"] = "100"
 theme(:boxed, xlab = "t [ns]")
 
 const sipm_test = SiPM(2, 20, 0.1);

@@ -11,10 +11,6 @@ on:
                 required: false
                 type: string
                 default: ubuntu-latest
-            arch:
-                required: false
-                type: string
-                default: x64
             allow_failure:
                 required: false
                 type: boolean
@@ -29,7 +25,7 @@ on:
 
 jobs:
     test:
-        name: Julia ${{ inputs.version }} - ${{ inputs.os }} - ${{ inputs.arch }} - ${{ github.event_name }}
+        name: Julia ${{ inputs.version }} - ${{ inputs.os }} - ${{ github.event_name }}
         runs-on: ${{ inputs.os }}
         continue-on-error: ${{ inputs.allow_failure }}
 
@@ -38,7 +34,6 @@ jobs:
             - uses: julia-actions/setup-julia@v3
               with:
                   version: ${{ inputs.version }}
-                  arch: ${{ inputs.arch }}
             - name: Use Julia cache
               uses: julia-actions/cache@v3
             - uses: julia-actions/julia-buildpkg@v1

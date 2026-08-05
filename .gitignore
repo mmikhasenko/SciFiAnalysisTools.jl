@@ -1,8 +1,10 @@
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
+.DS_Store
 Manifest.toml
 docs/build/
+data/
 *.rej
 node_modules
 docs/src/generated/simulation-tutorial.md

@@ -7,18 +7,21 @@ using InteractiveUtils
 # ╔═╡ ecd44892-90df-11f1-1e93-37ffa76ed7aa
 begin
     using DelimitedFiles
+	using NativeMinuit
     using Plots
 end
 
+# ╔═╡ ba446261-7e51-45a6-bacf-5cbbdd0b1fdd
+using JSON
+
 # ╔═╡ 37e44ade-da8d-4939-a5d1-795033ea4b82
-theme(:boxed)
+theme(:boxed, lw=1.5)
 
 # ╔═╡ e33d700f-92f1-4b12-9164-daf33dafe222
 function normalized_set(raw)
 	xv = raw[:, 1]
 	yv = raw[:, 2]
 	xv_ns = xv .* 1e9 
-	dx = xv_ns[2]-xv_ns[1]
 	norm = maximum(yv)
 	yv_norm = yv / norm
 	(; x = xv_ns, y = yv_norm)
@@ -52,26 +55,85 @@ begin
     end
 end
 
+# ╔═╡ 9e551e25-395f-470b-94f7-6164f6da2905
+begin
+	t_offset_ns = 25.0
+
+	function make_chi2(data)
+		(; x, y) = data
+		function objective(pars)
+			_sipm = SiPM(pars[1], pars[2], 0.2;
+				n_τ_long = pars[3], c_long = pars[4])
+			yhat = signal.(Ref(_sipm), x .- t_offset_ns)
+			sum(abs2, y - yhat) * 100
+		end
+		return objective
+	end
+
+	function fit_shape(data, initial)
+		m = Minuit(make_chi2(data), initial;
+			names = ["m", "τ", "n_τ_long", "c_long"],
+			errors = [0.1, 0.1, 0.001, 0.001],
+			limits = [
+				(2.0, 8.0),
+				(0.1, 10.0),
+				(1.00001, 2.0),
+				(0.5, 0.99999),
+			])
+		migrad!(m)
+	end
+end
+
+# ╔═╡ 9dd0835b-a26c-46ec-9e9e-2592518bf0f8
+results_p5pz5 = fit_shape(shape_p5pz5, [3.5, 2.0, 1.02, 0.88])
+
+# ╔═╡ 9deced8f-d475-46e3-a042-ffa59a748cf6
+results_p5pz6 = fit_shape(shape_p5pz6, [3.5, 2.0, 1.002, 0.987])
+
 # ╔═╡ 3157363d-03c3-4715-812a-15461e007880
-sipm0 = SiPM(3.5, 2, 0.2; n_τ_long = 1.02, c_long = 0.88)
+sipm_p5pz6 = let p = results_p5pz6.values
+	SiPM(p["m"], p["τ"], 0.2;
+		n_τ_long = p["n_τ_long"], c_long = p["c_long"])
+end
+
+# ╔═╡ 7b00dedd-76c4-45dc-ade8-4de8205dc417
+sipm_p5pz5 = let p = results_p5pz5.values
+	SiPM(p["m"], p["τ"], 0.2;
+		n_τ_long = p["n_τ_long"], c_long = p["c_long"])
+end
 
 # ╔═╡ 35734262-77f2-4b50-8845-fd63b832de8f
 let
     plot(xlab = "t [ns]")
-    plot!(shape_p5pz6.x, shape_p5pz6.y, lab = "p5pz6")
-    plot!(shape_p5pz5.x, shape_p5pz5.y, lab = "p5pz5")
-    plot!(0:1:100, lab = "SiPM model") do t
-        signal(sipm0, t - 25)
+    plot!(shape_p5pz6.x, shape_p5pz6.y, lab = "p5pz6 data", c = 1)
+    plot!(0:0.25:100, lab = "p5pz6 fit", c = 2) do t
+        signal(sipm_p5pz6, t - t_offset_ns)
     end
+	plot!(shape_p5pz5.x, shape_p5pz5.y, lab = "p5pz5 data", ls = :dash, c = 1)
+    plot!(0:0.25:100, lab = "p5pz5 fit", ls = :dash, c = 2) do t
+        signal(sipm_p5pz5, t - t_offset_ns)
+    end
+end
+
+# ╔═╡ 884bc61b-e68b-47a6-a252-efb4afe93a23
+open(joinpath("..", "data", "sipm_fit.json"), "w") do io
+	JSON.print(io, Dict(
+			"p5pz5" => sipm_p5pz5,
+			"p5pz6" => sipm_p5pz6
+	))
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+NativeMinuit = "5523a57a-07f4-4aae-a9fd-d526bcb5d194"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [compat]
+JSON = "~1.6.1"
+NativeMinuit = "~0.6.2"
 Plots = "~1.41.6"
 """
 
@@ -81,7 +143,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.5"
 manifest_format = "2.0"
-project_hash = "a25133fd995123ff8ee3c94477cb41b3842fa2ac"
+project_hash = "b88be24cb4dc9541ade4410255db072a7223bd99"
 
 [[deps.AliasTables]]
 deps = ["PtrArrays", "Random"]
@@ -562,6 +624,31 @@ deps = ["OpenLibm_jll"]
 git-tree-sha1 = "dbd2e8cd2c1c27f0b584f6661b4309609c5a685e"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
 version = "1.1.4"
+
+[[deps.NativeMinuit]]
+deps = ["LinearAlgebra", "Logging", "PrecompileTools", "Printf", "Random", "RecipesBase", "Statistics"]
+git-tree-sha1 = "3e9ac5c39abea0079dbf5f53c400c84c3ab5d211"
+uuid = "5523a57a-07f4-4aae-a9fd-d526bcb5d194"
+version = "0.6.2"
+
+    [deps.NativeMinuit.extensions]
+    NativeMinuitAdvancedHMCExt = ["AdvancedHMC", "LogDensityProblems", "LogDensityProblemsAD", "TransformVariables", "ForwardDiff"]
+    NativeMinuitClusteringExt = "Clustering"
+    NativeMinuitDataFramesExt = "DataFrames"
+    NativeMinuitForwardDiffExt = "ForwardDiff"
+    NativeMinuitOptimExt = "Optim"
+    NativeMinuitPlotsExt = "Plots"
+
+    [deps.NativeMinuit.weakdeps]
+    AdvancedHMC = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
+    Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
+    DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+    LogDensityProblems = "6fdf6af0-433a-55f7-b3ed-c6c6e0b8df7c"
+    LogDensityProblemsAD = "996a588d-648d-4e1f-a8f0-a84b347e47b1"
+    Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+    Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+    TransformVariables = "84d833dd-6860-57f9-a1a7-6da5db126cff"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
@@ -1196,8 +1283,14 @@ version = "1.13.0+0"
 # ╠═9585de4a-7753-466a-b196-06e4aaec9504
 # ╠═1f155077-f155-45f1-9c85-b2f1ec94be76
 # ╠═e33d700f-92f1-4b12-9164-daf33dafe222
+# ╠═9e551e25-395f-470b-94f7-6164f6da2905
+# ╠═9dd0835b-a26c-46ec-9e9e-2592518bf0f8
 # ╠═35734262-77f2-4b50-8845-fd63b832de8f
+# ╠═9deced8f-d475-46e3-a042-ffa59a748cf6
 # ╠═3157363d-03c3-4715-812a-15461e007880
+# ╠═7b00dedd-76c4-45dc-ade8-4de8205dc417
+# ╠═ba446261-7e51-45a6-bacf-5cbbdd0b1fdd
+# ╠═884bc61b-e68b-47a6-a252-efb4afe93a23
 # ╠═b83cdaad-5568-4133-9421-3dcfefc897d2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

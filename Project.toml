@@ -1,7 +1,7 @@
 name = "SciFiAnalysisTools"
 uuid = "b4afd74a-200e-56c5-86f2-542176f22525"
-authors = ["Mikhail Mikhasenko <mikhail.mikhasenko@cern.ch> and contributors"]
 version = "0.2.0"
+authors = ["Mikhail Mikhasenko <mikhail.mikhasenko@cern.ch> and contributors"]
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -10,6 +10,6 @@ QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 
 [compat]
 Distributions = "0.25.117"
-Parameters = "0.12.0"
+Parameters = "0.12.0, 0.13"
 QuadGK = "2.11.2"
 julia = "1.10"

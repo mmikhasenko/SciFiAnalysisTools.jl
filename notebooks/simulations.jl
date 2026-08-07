@@ -16,9 +16,6 @@ begin
 	using JSON
 end
 
-# ╔═╡ dc1eb9b8-36de-42f5-9d37-e8d528c66da1
-
-
 # ╔═╡ 2b73f186-5f83-4f0f-adaa-6f373781bd41
 theme(:boxed, xlab = "t [ns]")
 
@@ -1816,7 +1813,6 @@ version = "1.4.1+2"
 
 # ╔═╡ Cell order:
 # ╠═e30bb362-efba-11ef-27d4-5b71ea820116
-# ╠═dc1eb9b8-36de-42f5-9d37-e8d528c66da1
 # ╠═b3903d47-186d-42bc-b791-f1babad866b0
 # ╠═2b73f186-5f83-4f0f-adaa-6f373781bd41
 # ╠═f8d91ef1-e0c7-4afb-be36-80939b2e7286

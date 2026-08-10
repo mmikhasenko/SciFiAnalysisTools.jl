@@ -30,7 +30,7 @@ jobs:
               # Keep in sync with .pre-commit-config.yaml (hook uses system JuliaFormatter).
               run: julia -e 'using Pkg; Pkg.add(PackageSpec(name="JuliaFormatter", version="2.12.4"))'
             - name: Setup Python
-              uses: actions/setup-python@v6
+              uses: actions/setup-python@v7
               with:
                   cache: "pip"
             - name: Cache pre-commit
